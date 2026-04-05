@@ -83,7 +83,8 @@ app_license = "mit"
 # ------------
 
 # before_install = "dantata_town.install.before_install"
-# after_install = "dantata_town.install.after_install"
+after_install = "dantata_town.dantata_town.setup.create_boq_custom_fields"
+after_migrate = "dantata_town.dantata_town.setup.create_boq_custom_fields"
 
 # Uninstallation
 # ------------
@@ -137,13 +138,16 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Purchase Receipt": {
+		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty",
+		"on_cancel": "dantata_town.dantata_town.utils.reverse_boq_consumed_qty",
+	},
+	"Stock Entry": {
+		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty_from_stock_entry",
+		"on_cancel": "dantata_town.dantata_town.utils.reverse_boq_consumed_qty_from_stock_entry",
+	},
+}
 
 # Scheduled Tasks
 # ---------------

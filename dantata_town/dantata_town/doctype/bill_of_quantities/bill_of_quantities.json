@@ -1,0 +1,223 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-05 13:22:34.488939",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_nbpx",
+  "amended_from",
+  "site",
+  "column_break_pwnj",
+  "date",
+  "project",
+  "section_break_zuqi",
+  "stage_1",
+  "table_txao",
+  "section_break_ueqc",
+  "stage_2",
+  "description2",
+  "section_break_nqxo",
+  "stage_3",
+  "description3",
+  "section_break_oeao",
+  "stage_4",
+  "description4",
+  "section_break_oflm",
+  "stage_5",
+  "description5",
+  "section_break_leru",
+  "stage_6",
+  "description6",
+  "section_break_faoy",
+  "stage_7",
+  "description7",
+  "section_break_lkvv",
+  "summary"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_nbpx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Bill of Quantities",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_pwnj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "section_break_zuqi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_1",
+   "fieldtype": "Data",
+   "label": "Stage 1"
+  },
+  {
+   "fieldname": "table_txao",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_ueqc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_2",
+   "fieldtype": "Data",
+   "label": "Stage 2"
+  },
+  {
+   "fieldname": "description2",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_nqxo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_3",
+   "fieldtype": "Data",
+   "label": "Stage 3"
+  },
+  {
+   "fieldname": "description3",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_oeao",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_4",
+   "fieldtype": "Data",
+   "label": "Stage 4"
+  },
+  {
+   "fieldname": "description4",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_oflm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_5",
+   "fieldtype": "Data",
+   "label": "Stage 5"
+  },
+  {
+   "fieldname": "description5",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_leru",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_6",
+   "fieldtype": "Data",
+   "label": "Stage 6"
+  },
+  {
+   "fieldname": "description6",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_faoy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "stage_7",
+   "fieldtype": "Data",
+   "label": "Stage 7"
+  },
+  {
+   "fieldname": "description7",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "section_break_lkvv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "Table",
+   "label": "Summary",
+   "options": "BOQ Summary Item"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-04-05 13:22:34.488939",
+ "modified_by": "Administrator",
+ "module": "Dantata Town",
+ "name": "Bill of Quantities",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

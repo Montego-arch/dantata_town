@@ -1,0 +1,157 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-05 13:20:04.312120",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "description",
+  "unit",
+  "planned_quantity",
+  "rate",
+  "amount",
+  "description_type",
+  "item",
+  "item_name",
+  "column_break_dpwy",
+  "consumed_quantity",
+  "remaining_quantity",
+  "variation_quantity",
+  "actual_quantity",
+  "actual_rate",
+  "variation_rate",
+  "actual_amount",
+  "create"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "description",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Description",
+   "options": "BOQ Item Detail"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "description.unit",
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Unit",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "planned_quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Planned Quantity"
+  },
+  {
+   "columns": 2,
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate"
+  },
+  {
+   "columns": 2,
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "description.description_type",
+   "fieldname": "description_type",
+   "fieldtype": "Select",
+   "label": "Description Type",
+   "options": "\nLabour\nMaterial",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "description.item",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "description.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dpwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "consumed_quantity",
+   "fieldtype": "Float",
+   "label": "Consumed Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remaining_quantity",
+   "fieldtype": "Float",
+   "label": "Remaining Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "variation_quantity",
+   "fieldtype": "Float",
+   "label": "Variation Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actual_quantity",
+   "fieldtype": "Float",
+   "label": "Actual Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actual_rate",
+   "fieldtype": "Currency",
+   "label": "Actual Rate"
+  },
+  {
+   "fieldname": "variation_rate",
+   "fieldtype": "Currency",
+   "label": "Variation Rate"
+  },
+  {
+   "fieldname": "actual_amount",
+   "fieldtype": "Currency",
+   "label": "Actual Amount",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "create",
+   "fieldtype": "Button",
+   "in_list_view": 1,
+   "label": "Create"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-05 13:20:04.312120",
+ "modified_by": "Administrator",
+ "module": "Dantata Town",
+ "name": "BOQ Items",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
