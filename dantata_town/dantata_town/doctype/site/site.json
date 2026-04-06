@@ -50,7 +50,8 @@
   {
    "fieldname": "total_units",
    "fieldtype": "Float",
-   "label": "Total Units"
+   "label": "Total Units",
+   "read_only": 1
   },
   {
    "fieldname": "notes_section",

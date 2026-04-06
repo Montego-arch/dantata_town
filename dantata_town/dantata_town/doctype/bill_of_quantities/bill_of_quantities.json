@@ -1,10 +1,12 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "naming_series:",
  "creation": "2026-04-05 13:22:34.488939",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "section_break_nbpx",
   "amended_from",
   "site",
@@ -36,6 +38,14 @@
   "summary"
  ],
  "fields": [
+  {
+   "default": "BOQ-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "BOQ-.YYYY.-.#####",
+   "set_only_once": 1
+  },
   {
    "fieldname": "section_break_nbpx",
    "fieldtype": "Section Break"
