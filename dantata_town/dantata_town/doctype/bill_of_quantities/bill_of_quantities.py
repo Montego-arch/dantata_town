@@ -42,27 +42,33 @@ class BillofQuantities(Document):
 				row.actual_quantity = flt(row.consumed_quantity) + flt(row.variation_quantity)
 
 	def update_summary(self):
-		self.summary = []
+		self.set("summary", [])
 		for stage_name_field, table_field in STAGE_NAME_MAP:
 			stage_name = self.get(stage_name_field)
-			if not stage_name:
+			rows = self.get(table_field) or []
+			if not stage_name and not rows:
 				continue
+
+			label = stage_name or stage_name_field.replace("_", " ").title()
 
 			labour_total = 0
 			material_total = 0
-			for row in self.get(table_field) or []:
+			for row in rows:
 				if row.description_type == "Labour":
 					labour_total += flt(row.amount)
+				elif row.description_type == "Material":
+					material_total += flt(row.amount)
 				else:
 					material_total += flt(row.amount)
 
-			self.append("summary", {
-				"stage": stage_name,
-				"description": stage_name,
-				"labour": labour_total,
-				"material": material_total,
-				"amount": labour_total + material_total,
-			})
+			if labour_total or material_total:
+				self.append("summary", {
+					"stage": label,
+					"description": label,
+					"labour": labour_total,
+					"material": material_total,
+					"amount": labour_total + material_total,
+				})
 
 
 @frappe.whitelist()
