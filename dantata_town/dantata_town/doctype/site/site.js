@@ -11,12 +11,14 @@ frappe.ui.form.on("Site", {
 
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Create Project"), () => {
-				let items = (frm.doc.project_units || []).map(
-					(row) => row.unit_type
-				).filter(Boolean);
+				let items = (frm.doc.project_units || [])
+					.map((row) => row.unit_type)
+					.filter(Boolean);
 
 				if (!items.length) {
-					frappe.msgprint(__("Please add at least one item in Project Units table"));
+					frappe.msgprint(
+						__("Please add at least one item in Project Units table")
+					);
 					return;
 				}
 
