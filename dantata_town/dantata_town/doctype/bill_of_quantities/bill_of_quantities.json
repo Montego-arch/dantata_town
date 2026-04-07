@@ -16,24 +16,31 @@
   "section_break_zuqi",
   "stage_1",
   "table_txao",
+  "stage_1_summary",
   "section_break_ueqc",
   "stage_2",
   "description2",
+  "stage_2_summary",
   "section_break_nqxo",
   "stage_3",
   "description3",
+  "stage_3_summary",
   "section_break_oeao",
   "stage_4",
   "description4",
+  "stage_4_summary",
   "section_break_oflm",
   "stage_5",
   "description5",
+  "stage_5_summary",
   "section_break_leru",
   "stage_6",
   "description6",
+  "stage_6_summary",
   "section_break_faoy",
   "stage_7",
   "description7",
+  "stage_7_summary",
   "section_break_lkvv",
   "summary"
  ],
@@ -86,8 +93,10 @@
    "options": "Project"
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_zuqi",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 1"
   },
   {
    "fieldname": "stage_1",
@@ -101,8 +110,17 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_1_summary",
+   "fieldtype": "Table",
+   "label": "Stage 1 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "fieldname": "section_break_ueqc",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 2"
   },
   {
    "fieldname": "stage_2",
@@ -116,8 +134,17 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_2_summary",
+   "fieldtype": "Table",
+   "label": "Stage 2 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "fieldname": "section_break_nqxo",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 3"
   },
   {
    "fieldname": "stage_3",
@@ -131,8 +158,17 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_3_summary",
+   "fieldtype": "Table",
+   "label": "Stage 3 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "fieldname": "section_break_oeao",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 4"
   },
   {
    "fieldname": "stage_4",
@@ -146,8 +182,17 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_4_summary",
+   "fieldtype": "Table",
+   "label": "Stage 4 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "fieldname": "section_break_oflm",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 5"
   },
   {
    "fieldname": "stage_5",
@@ -161,8 +206,17 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_5_summary",
+   "fieldtype": "Table",
+   "label": "Stage 5 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "fieldname": "section_break_leru",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 6"
   },
   {
    "fieldname": "stage_6",
@@ -176,8 +230,17 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_6_summary",
+   "fieldtype": "Table",
+   "label": "Stage 6 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
    "fieldname": "section_break_faoy",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Stage 7"
   },
   {
    "fieldname": "stage_7",
@@ -191,8 +254,16 @@
    "options": "BOQ Items"
   },
   {
+   "fieldname": "stage_7_summary",
+   "fieldtype": "Table",
+   "label": "Stage 7 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_break_lkvv",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Overall Summary"
   },
   {
    "fieldname": "summary",

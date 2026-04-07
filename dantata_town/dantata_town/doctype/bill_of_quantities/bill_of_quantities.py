@@ -13,13 +13,13 @@ STAGE_TABLE_FIELDS = [
 ]
 
 STAGE_NAME_MAP = [
-	("stage_1", "table_txao"),
-	("stage_2", "description2"),
-	("stage_3", "description3"),
-	("stage_4", "description4"),
-	("stage_5", "description5"),
-	("stage_6", "description6"),
-	("stage_7", "description7"),
+	("stage_1", "table_txao", "stage_1_summary"),
+	("stage_2", "description2", "stage_2_summary"),
+	("stage_3", "description3", "stage_3_summary"),
+	("stage_4", "description4", "stage_4_summary"),
+	("stage_5", "description5", "stage_5_summary"),
+	("stage_6", "description6", "stage_6_summary"),
+	("stage_7", "description7", "stage_7_summary"),
 ]
 
 
@@ -43,9 +43,13 @@ class BillofQuantities(Document):
 
 	def update_summary(self):
 		self.set("summary", [])
-		for stage_name_field, table_field in STAGE_NAME_MAP:
+		for stage_name_field, table_field, summary_field in STAGE_NAME_MAP:
 			stage_name = self.get(stage_name_field)
 			rows = self.get(table_field) or []
+
+			# Clear per-stage summary
+			self.set(summary_field, [])
+
 			if not stage_name and not rows:
 				continue
 
@@ -62,13 +66,17 @@ class BillofQuantities(Document):
 					material_total += flt(row.amount)
 
 			if labour_total or material_total:
-				self.append("summary", {
+				summary_row = {
 					"stage": label,
 					"description": label,
 					"labour": labour_total,
 					"material": material_total,
 					"amount": labour_total + material_total,
-				})
+				}
+				# Per-stage summary
+				self.append(summary_field, summary_row)
+				# Overall summary
+				self.append("summary", summary_row)
 
 
 @frappe.whitelist()
