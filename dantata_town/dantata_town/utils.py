@@ -1,5 +1,15 @@
 import frappe
+from frappe import _
 from frappe.utils import flt
+
+
+def validate_project_has_site(doc, method):
+	"""Block Project creation without a Site."""
+	if not doc.site:
+		frappe.throw(
+			_("A Project cannot be created without a Site. "
+			  "Please create the Project from a Site record.")
+		)
 
 
 def update_boq_consumed_qty(doc, method):

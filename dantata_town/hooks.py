@@ -43,7 +43,7 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"Project": "public/js/project.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -139,6 +139,9 @@ after_migrate = "dantata_town.dantata_town.setup.create_boq_custom_fields"
 # Hook on document methods and events
 
 doc_events = {
+	"Project": {
+		"validate": "dantata_town.dantata_town.utils.validate_project_has_site",
+	},
 	"Purchase Receipt": {
 		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty",
 		"on_cancel": "dantata_town.dantata_town.utils.reverse_boq_consumed_qty",

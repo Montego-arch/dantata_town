@@ -73,6 +73,7 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -90,7 +91,9 @@
    "fieldname": "project",
    "fieldtype": "Link",
    "label": "Project",
-   "options": "Project"
+   "options": "Project",
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "collapsible": 1,

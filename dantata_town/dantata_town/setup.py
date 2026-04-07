@@ -11,6 +11,18 @@ def create_boq_custom_fields():
 
 def _create_custom_fields():
 	custom_fields = {
+		"Material Request": [
+			{
+				"fieldname": "boq",
+				"fieldtype": "Link",
+				"label": "Bill of Quantities",
+				"options": "Bill of Quantities",
+				"insert_after": "material_request_type",
+				"read_only": 1,
+				"reqd": 1,
+				"module": "Dantata Town",
+			},
+		],
 		"Material Request Item": [
 			{
 				"fieldname": "boq",
@@ -37,7 +49,9 @@ def _create_custom_fields():
 				"fieldtype": "Link",
 				"label": "Site",
 				"options": "Site",
-				"insert_after": "company",
+				"insert_after": "project_name",
+				"read_only": 1,
+				"reqd": 1,
 				"module": "Dantata Town",
 			},
 		],

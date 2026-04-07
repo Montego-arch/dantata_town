@@ -25,9 +25,21 @@ STAGE_NAME_MAP = [
 
 class BillofQuantities(Document):
 	def validate(self):
+		self.validate_project_site()
 		self.calculate_amounts()
 		self.calculate_quantities()
 		self.update_summary()
+
+	def validate_project_site(self):
+		"""Ensure the project belongs to the selected site."""
+		if self.project and self.site:
+			project_site = frappe.db.get_value("Project", self.project, "site")
+			if project_site != self.site:
+				frappe.throw(
+					_("Project {0} does not belong to Site {1}").format(
+						self.project, self.site
+					)
+				)
 
 	def calculate_amounts(self):
 		for table_field in STAGE_TABLE_FIELDS:
@@ -124,6 +136,7 @@ def create_material_request(boq_name, child_docname, qty):
 	mr = frappe.new_doc("Material Request")
 	mr.material_request_type = "Purchase"
 	mr.schedule_date = nowdate()
+	mr.boq = boq_name
 	mr.append("items", {
 		"item_code": row.item,
 		"qty": qty,
