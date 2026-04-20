@@ -93,3 +93,31 @@ class TestQuotationInstallments(FrappeTestCase):
 		doc = self._new_quotation(installment_deposit_amount=0)
 		doc.insert(ignore_permissions=True)  # Should not raise
 		self.assertTrue(doc.name)
+
+	def test_installment_submit_requires_deposit(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation(installment_deposit_amount=0)
+		doc.insert(ignore_permissions=True)
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
+
+	def test_installment_submit_requires_start_date(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation(installment_start_date=None)
+		doc.insert(ignore_permissions=True)
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
+
+	def test_installment_submit_requires_months(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation(installment_months=0)
+		doc.insert(ignore_permissions=True)
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
+
+	def test_installment_submit_rejects_deposit_ge_total(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation(installment_deposit_amount=60000)  # total is 50000
+		doc.insert(ignore_permissions=True)
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
