@@ -21,22 +21,31 @@ def generate_installment_schedule(quotation_name):
 	start = getdate(doc.installment_start_date)
 
 	balance = total - deposit
-	per_month = flt(balance / months, 2)
-	last_month = flt(balance - per_month * (months - 1), 2)
+	per_month_amount = flt(balance / months, 2)
+	last_month_amount = flt(balance - per_month_amount * (months - 1), 2)
+
+	# Portions at 6dp; last row absorbs rounding drift so the set sums to 100%.
+	deposit_portion = flt(deposit / total * 100, 6)
+	per_month_portion = flt(per_month_amount / total * 100, 6)
+	last_month_portion = flt(
+		100 - deposit_portion - per_month_portion * (months - 1), 6
+	)
 
 	doc.set("payment_schedule", [])
 	doc.append("payment_schedule", {
 		"due_date": start,
 		"payment_amount": deposit,
-		"invoice_portion": 0,
+		"invoice_portion": deposit_portion,
 		"description": _("Deposit"),
 	})
 	for i in range(1, months + 1):
-		amount = per_month if i < months else last_month
+		is_last = i == months
+		amount = last_month_amount if is_last else per_month_amount
+		portion = last_month_portion if is_last else per_month_portion
 		doc.append("payment_schedule", {
 			"due_date": add_months(start, i),
 			"payment_amount": amount,
-			"invoice_portion": 0,
+			"invoice_portion": portion,
 			"description": _("Installment {0} of {1}").format(i, months),
 		})
 	doc.save()
