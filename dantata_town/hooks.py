@@ -140,7 +140,10 @@ after_migrate = "dantata_town.dantata_town.setup.create_boq_custom_fields"
 
 doc_events = {
 	"Project": {
-		"validate": "dantata_town.dantata_town.utils.validate_project_has_site",
+		"validate": [
+			"dantata_town.dantata_town.utils.validate_project_has_site",
+			"dantata_town.dantata_town.utils.validate_project_subtype_matches_type",
+		],
 	},
 	"Purchase Receipt": {
 		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty",

@@ -12,6 +12,19 @@ def validate_project_has_site(doc, method):
 		)
 
 
+def validate_project_subtype_matches_type(doc, method=None):
+	"""Reject a Project whose subtype belongs to a different parent type."""
+	if not doc.project_subtype:
+		return
+	parent_type = frappe.db.get_value(
+		"Project Subtype", doc.project_subtype, "project_type"
+	)
+	if parent_type != doc.project_type:
+		frappe.throw(_(
+			"Project Subtype {0} does not belong to Project Type {1}"
+		).format(doc.project_subtype, doc.project_type))
+
+
 def update_boq_consumed_qty(doc, method):
 	"""Called on Purchase Receipt submit.
 	Traces: PR Item -> MR Item -> BOQ detail.

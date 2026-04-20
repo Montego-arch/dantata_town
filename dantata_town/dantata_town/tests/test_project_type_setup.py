@@ -65,3 +65,28 @@ class TestProjectTypeSetup(FrappeTestCase):
 			"value",
 		)
 		self.assertEqual(ps, "1")
+
+	def test_validator_rejects_mismatched_subtype(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.utils import validate_project_subtype_matches_type
+		doc = frappe._dict(project_type="Building", project_subtype="Roads")
+		with self.assertRaises(frappe.ValidationError):
+			validate_project_subtype_matches_type(doc)
+
+	def test_validator_accepts_matching_subtype(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.utils import validate_project_subtype_matches_type
+		doc = frappe._dict(project_type="Building", project_subtype="SHELL")
+		try:
+			validate_project_subtype_matches_type(doc)
+		except frappe.ValidationError:
+			self.fail("Validator rejected a valid Building/SHELL pair")
+
+	def test_validator_accepts_empty_subtype(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.utils import validate_project_subtype_matches_type
+		doc = frappe._dict(project_type="Building", project_subtype=None)
+		try:
+			validate_project_subtype_matches_type(doc)
+		except frappe.ValidationError:
+			self.fail("Validator rejected an empty subtype")
