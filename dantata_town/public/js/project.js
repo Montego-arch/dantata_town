@@ -9,4 +9,8 @@ frappe.ui.form.on("Project", {
 			});
 		}
 	},
+
+	project_type(frm) {
+		frm.set_value("project_subtype", null);
+	},
 });
