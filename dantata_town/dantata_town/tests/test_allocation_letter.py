@@ -45,3 +45,39 @@ class TestAllocationLetter(FrappeTestCase):
 		self.assertEqual(target.chairman_name, "Alhassan A. Dantata")
 		self.assertEqual(target.company_name, "Dantata Town Developers Ltd")
 		self.assertEqual(target.letter_date, frappe.utils.today())
+
+	def _new_draft_letter(self, so, **overrides):
+		"""Helper to build a new AL in memory with sensible defaults."""
+		_ensure_terms()
+		doc = frappe.get_doc({
+			"doctype": "Allocation Letter",
+			"letter_date": frappe.utils.today(),
+			"sales_order": so.name,
+			"customer": so.customer,
+			"addressee_name": so.customer_name,
+			"property_type": "Residential",
+			"property_description": "4-bedrooms Semi-Detached Duplex - DPC",
+			"location_scheme": "Dantata City Estate, F01 Kubwa, Abuja",
+			"plot_number": "DCB-001",
+			"purchase_price_option": "Installment",
+			"cost_of_property": 1000,
+			"payment_duration": "4 months",
+			"installment_schedule": [
+				{"sequence_label": "First", "amount": 250, "due_date": frappe.utils.today()},
+				{"sequence_label": "Second", "amount": 250, "due_date": frappe.utils.today()},
+				{"sequence_label": "Third", "amount": 250, "due_date": frappe.utils.today()},
+				{"sequence_label": "Fourth", "amount": 250, "due_date": frappe.utils.today()},
+			],
+		})
+		doc.update(overrides)
+		return doc
+
+	def test_outright_clears_schedule_and_duration(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		doc = self._new_draft_letter(so, purchase_price_option="Outright")
+		doc.insert(ignore_permissions=True)
+		doc.reload()
+		self.assertEqual(len(doc.installment_schedule or []), 0)
+		self.assertIn(doc.payment_duration, (None, ""))

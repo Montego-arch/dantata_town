@@ -10,7 +10,9 @@ from frappe.utils import flt, now, today
 
 class AllocationLetter(Document):
 	def validate(self):
-		pass
+		if self.purchase_price_option == "Outright":
+			self.installment_schedule = []
+			self.payment_duration = None
 
 	def on_update(self):
 		pass
