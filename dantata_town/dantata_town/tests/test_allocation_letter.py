@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import flt
 
 
 def _ensure_terms(chairman="Alhassan A. Dantata", company="Dantata Town Developers Ltd", conditions="<p>1. Conditions go here.</p>"):
@@ -151,3 +152,43 @@ class TestAllocationLetter(FrappeTestCase):
 		doc.reload()
 		self.assertEqual(doc.approved_by, frappe.session.user)
 		self.assertIsNotNone(doc.approved_on)
+
+	def test_make_allocation_letter_copies_payment_schedule(self):
+		"""When the source Sales Order has payment_schedule rows, they map into
+		the target AL's installment_schedule as First / Second / Third / Fourth /
+		Installment 5 labels."""
+		_ensure_terms()
+		from dantata_town.dantata_town.doctype.allocation_letter.allocation_letter import (
+			make_allocation_letter,
+		)
+
+		# Find a submitted SO that has payment_schedule rows; skip if none.
+		so_name = None
+		for so in frappe.get_all(
+			"Sales Order",
+			filters={"docstatus": 1},
+			fields=["name"],
+		):
+			if frappe.db.count("Payment Schedule", {"parent": so.name}) > 0:
+				so_name = so.name
+				break
+		if not so_name:
+			self.skipTest("No submitted Sales Order with payment_schedule on this site")
+
+		target = make_allocation_letter(so_name)
+		self.assertGreater(len(target.installment_schedule), 0)
+
+		so_rows = frappe.get_all(
+			"Payment Schedule",
+			filters={"parent": so_name},
+			fields=["payment_amount", "due_date"],
+			order_by="idx asc",
+		)
+		self.assertEqual(len(target.installment_schedule), len(so_rows))
+
+		ordinal_labels = ["First", "Second", "Third", "Fourth"]
+		for i, (al_row, so_row) in enumerate(zip(target.installment_schedule, so_rows)):
+			expected_label = ordinal_labels[i] if i < len(ordinal_labels) else f"Installment {i + 1}"
+			self.assertEqual(al_row.sequence_label, expected_label)
+			self.assertEqual(flt(al_row.amount), flt(so_row.payment_amount))
+			self.assertEqual(str(al_row.due_date), str(so_row.due_date))

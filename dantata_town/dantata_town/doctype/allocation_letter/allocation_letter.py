@@ -58,6 +58,16 @@ class AllocationLetter(Document):
 		self.terms_snapshot = snapshot
 
 
+_ORDINAL_LABELS = ["First", "Second", "Third", "Fourth"]
+
+
+def _label_for(idx):
+	"""Map a 0-based row index to a human label."""
+	if idx < len(_ORDINAL_LABELS):
+		return _ORDINAL_LABELS[idx]
+	return "Installment {0}".format(idx + 1)
+
+
 @frappe.whitelist()
 def make_allocation_letter(source_name, target_doc=None):
 	"""Create an Allocation Letter pre-filled from a Sales Order."""
@@ -77,6 +87,16 @@ def make_allocation_letter(source_name, target_doc=None):
 		if terms.default_chairman_name:
 			target.chairman_name = terms.default_chairman_name
 		target.company_name = terms.default_company_name or "Dantata Town Developers Ltd"
+
+		if source.get("payment_schedule"):
+			target.purchase_price_option = "Installment"
+			target.installment_schedule = []
+			for idx, row in enumerate(source.payment_schedule):
+				target.append("installment_schedule", {
+					"sequence_label": _label_for(idx),
+					"amount": row.payment_amount,
+					"due_date": row.due_date,
+				})
 
 	return get_mapped_doc(
 		"Sales Order",
