@@ -31,7 +31,20 @@ class AllocationLetter(Document):
 				))
 
 	def on_update(self):
-		pass
+		prev = self.get_doc_before_save()
+		prev_state = prev.workflow_state if prev else None
+		if self.workflow_state == "Approved" and prev_state != "Approved":
+			frappe.db.set_value(
+				"Allocation Letter",
+				self.name,
+				{
+					"approved_by": frappe.session.user,
+					"approved_on": now(),
+				},
+				update_modified=False,
+			)
+			self.approved_by = frappe.session.user
+			self.approved_on = now()
 
 	def before_submit(self):
 		terms = frappe.get_single("Allocation Letter Terms")

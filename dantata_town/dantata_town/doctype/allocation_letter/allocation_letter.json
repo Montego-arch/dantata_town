@@ -29,6 +29,7 @@
   "approval_section",
   "approved_by",
   "approved_on",
+  "workflow_state",
   "column_break_approval",
   "terms_snapshot",
   "signature_section",
@@ -181,6 +182,14 @@
    "fieldname": "approved_on",
    "fieldtype": "Datetime",
    "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow State",
+   "no_copy": 1,
+   "options": "Workflow State",
    "read_only": 1
   },
   {

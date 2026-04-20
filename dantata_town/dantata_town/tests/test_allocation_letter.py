@@ -138,3 +138,16 @@ class TestAllocationLetter(FrappeTestCase):
 		doc = self._new_draft_letter(so).insert(ignore_permissions=True)
 		with self.assertRaises(frappe.ValidationError):
 			doc.submit()
+
+	def test_approved_stamps_set_on_transition_to_approved(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms()
+		doc = self._new_draft_letter(so).insert(ignore_permissions=True)
+		# Simulate workflow moving to Approved.
+		doc.workflow_state = "Approved"
+		doc.save(ignore_permissions=True)
+		doc.reload()
+		self.assertEqual(doc.approved_by, frappe.session.user)
+		self.assertIsNotNone(doc.approved_on)
