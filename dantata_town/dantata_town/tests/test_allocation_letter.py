@@ -47,8 +47,11 @@ class TestAllocationLetter(FrappeTestCase):
 		self.assertEqual(target.letter_date, frappe.utils.today())
 
 	def _new_draft_letter(self, so, **overrides):
-		"""Helper to build a new AL in memory with sensible defaults."""
-		_ensure_terms()
+		"""Helper to build a new AL in memory with sensible defaults.
+
+		Callers must call _ensure_terms() themselves if they care about snapshot content;
+		this helper does not configure the Terms single.
+		"""
 		doc = frappe.get_doc({
 			"doctype": "Allocation Letter",
 			"letter_date": frappe.utils.today(),
@@ -76,6 +79,7 @@ class TestAllocationLetter(FrappeTestCase):
 		so = _pick_submitted_sales_order()
 		if not so:
 			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms()
 		doc = self._new_draft_letter(so, purchase_price_option="Outright")
 		doc.insert(ignore_permissions=True)
 		doc.reload()
@@ -86,6 +90,7 @@ class TestAllocationLetter(FrappeTestCase):
 		so = _pick_submitted_sales_order()
 		if not so:
 			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms()
 		doc = self._new_draft_letter(so)
 		doc.installment_schedule[0].amount = 100  # total now 850, not 1000
 		with self.assertRaises(frappe.ValidationError):
@@ -95,6 +100,7 @@ class TestAllocationLetter(FrappeTestCase):
 		so = _pick_submitted_sales_order()
 		if not so:
 			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms()
 		doc = self._new_draft_letter(so, payment_duration="")
 		with self.assertRaises(frappe.ValidationError):
 			doc.insert(ignore_permissions=True)
@@ -103,6 +109,32 @@ class TestAllocationLetter(FrappeTestCase):
 		so = _pick_submitted_sales_order()
 		if not so:
 			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms()
 		doc = self._new_draft_letter(so, installment_schedule=[])
 		with self.assertRaises(frappe.ValidationError):
 			doc.insert(ignore_permissions=True)
+
+	def test_terms_snapshot_populated_at_submit(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms(conditions="<p>Known conditions v1.</p>")
+		doc = self._new_draft_letter(so).insert(ignore_permissions=True)
+		doc.submit()
+		doc.reload()
+		self.assertIn("Known conditions v1.", doc.terms_snapshot or "")
+
+		# Editing the single does not change the submitted doc's snapshot.
+		_ensure_terms(conditions="<p>Updated conditions v2.</p>")
+		doc.reload()
+		self.assertIn("Known conditions v1.", doc.terms_snapshot or "")
+		self.assertNotIn("Updated conditions v2.", doc.terms_snapshot or "")
+
+	def test_submit_rejected_when_terms_not_configured(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		_ensure_terms(conditions="")
+		doc = self._new_draft_letter(so).insert(ignore_permissions=True)
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()

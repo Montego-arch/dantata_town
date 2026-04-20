@@ -34,7 +34,15 @@ class AllocationLetter(Document):
 		pass
 
 	def before_submit(self):
-		pass
+		terms = frappe.get_single("Allocation Letter Terms")
+		if not (terms.conditions_text or "").strip():
+			frappe.throw(_(
+				"Please configure Allocation Letter Terms → Conditions Text before submitting."
+			))
+		snapshot = terms.conditions_text
+		if terms.withdrawal_clause_text:
+			snapshot += "\n\n" + terms.withdrawal_clause_text
+		self.terms_snapshot = snapshot
 
 
 @frappe.whitelist()
