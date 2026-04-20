@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import flt
 
 from dantata_town.dantata_town.setup import create_boq_custom_fields
 
@@ -121,3 +122,29 @@ class TestQuotationInstallments(FrappeTestCase):
 		doc.insert(ignore_permissions=True)
 		with self.assertRaises(frappe.ValidationError):
 			doc.submit()
+
+	def test_generate_produces_n_plus_1_rows(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation()
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		generate_installment_schedule(doc.name)
+		doc.reload()
+
+		self.assertEqual(len(doc.payment_schedule), 5)  # 1 deposit + 4 monthly
+		self.assertEqual(flt(doc.payment_schedule[0].payment_amount), 10000)
+		for i in range(1, 5):
+			self.assertGreater(flt(doc.payment_schedule[i].payment_amount), 0)
+
+	def test_generate_sum_equals_grand_total(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation()
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		generate_installment_schedule(doc.name)
+		doc.reload()
+
+		total = sum(flt(row.payment_amount) for row in doc.payment_schedule)
+		self.assertEqual(total, flt(doc.grand_total))
