@@ -13,6 +13,22 @@ class AllocationLetter(Document):
 		if self.purchase_price_option == "Outright":
 			self.installment_schedule = []
 			self.payment_duration = None
+			return
+
+		if self.purchase_price_option == "Installment":
+			if not self.payment_duration:
+				frappe.throw(_("Payment Duration is required for installment offers."))
+			if not self.installment_schedule:
+				frappe.throw(_("Add at least one installment row for installment offers."))
+			total = sum(flt(row.amount) for row in self.installment_schedule)
+			if flt(total) != flt(self.cost_of_property):
+				currency = frappe.defaults.get_global_default("currency")
+				frappe.throw(_(
+					"Installment schedule total ({0}) does not match Cost of Property ({1})."
+				).format(
+					frappe.utils.fmt_money(total, currency=currency),
+					frappe.utils.fmt_money(self.cost_of_property, currency=currency),
+				))
 
 	def on_update(self):
 		pass

@@ -81,3 +81,28 @@ class TestAllocationLetter(FrappeTestCase):
 		doc.reload()
 		self.assertEqual(len(doc.installment_schedule or []), 0)
 		self.assertIn(doc.payment_duration, (None, ""))
+
+	def test_installment_schedule_sum_mismatch_rejected(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		doc = self._new_draft_letter(so)
+		doc.installment_schedule[0].amount = 100  # total now 850, not 1000
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert(ignore_permissions=True)
+
+	def test_installment_without_payment_duration_rejected(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		doc = self._new_draft_letter(so, payment_duration="")
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert(ignore_permissions=True)
+
+	def test_installment_without_schedule_rows_rejected(self):
+		so = _pick_submitted_sales_order()
+		if not so:
+			self.skipTest("No submitted Sales Order on this site")
+		doc = self._new_draft_letter(so, installment_schedule=[])
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert(ignore_permissions=True)
