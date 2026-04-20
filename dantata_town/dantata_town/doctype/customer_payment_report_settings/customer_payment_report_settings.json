@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "creation": "2026-04-20 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "send_day_of_month",
+  "recipient_section",
+  "recipient_emails",
+  "status_section",
+  "last_sent_date",
+  "column_break_status",
+  "last_sent_status"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "1",
+   "description": "Day of month on which the monthly report is sent (1 - 28).",
+   "fieldname": "send_day_of_month",
+   "fieldtype": "Int",
+   "label": "Send Day of Month",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recipient_section",
+   "fieldtype": "Section Break",
+   "label": "Recipients"
+  },
+  {
+   "description": "One email address per line.",
+   "fieldname": "recipient_emails",
+   "fieldtype": "Small Text",
+   "label": "Recipient Emails"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Last Run"
+  },
+  {
+   "fieldname": "last_sent_date",
+   "fieldtype": "Date",
+   "label": "Last Sent Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_sent_status",
+   "fieldtype": "Select",
+   "label": "Last Sent Status",
+   "options": "\nSuccess\nFailed\nSkipped (disabled)\nSkipped (wrong day)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dantata Town",
+ "name": "Customer Payment Report Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
