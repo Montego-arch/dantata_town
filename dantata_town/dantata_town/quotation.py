@@ -12,6 +12,7 @@ def generate_installment_schedule(quotation_name):
 	installment_deposit_amount + installment_start_date + installment_months.
 	"""
 	doc = frappe.get_doc("Quotation", quotation_name)
+	doc.check_permission("write")
 	_validate_installment_inputs(doc)
 
 	total = flt(doc.grand_total)
@@ -27,7 +28,7 @@ def generate_installment_schedule(quotation_name):
 	doc.append("payment_schedule", {
 		"due_date": start,
 		"payment_amount": deposit,
-		"invoice_portion": flt(deposit / total * 100, 6),
+		"invoice_portion": 0,
 		"description": _("Deposit"),
 	})
 	for i in range(1, months + 1):
@@ -35,7 +36,7 @@ def generate_installment_schedule(quotation_name):
 		doc.append("payment_schedule", {
 			"due_date": add_months(start, i),
 			"payment_amount": amount,
-			"invoice_portion": flt(amount / total * 100, 6),
+			"invoice_portion": 0,
 			"description": _("Installment {0} of {1}").format(i, months),
 		})
 	doc.save()

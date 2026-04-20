@@ -57,12 +57,16 @@ class TestQuotationInstallments(FrappeTestCase):
 		defaults = {
 			"doctype": "Quotation",
 			"quotation_to": "Customer",
-			"party_name": frappe.db.get_value("Customer", {}, "name"),
+			"party_name": frappe.db.get_value("Customer", {"disabled": 0}, "name"),
 			"currency": "NGN",
 			"conversion_rate": 1,
-			"selling_price_list": frappe.db.get_value("Price List", {"selling": 1}, "name"),
+			"selling_price_list": frappe.db.get_value(
+				"Price List", {"selling": 1, "currency": "NGN"}, "name"
+			),
 			"items": [{
-				"item_code": frappe.db.get_value("Item", {"disabled": 0}, "name"),
+				"item_code": frappe.db.get_value(
+					"Item", {"disabled": 0, "is_sales_item": 1}, "name"
+				),
 				"qty": 1,
 				"rate": 50000,
 			}],
