@@ -149,6 +149,9 @@ doc_events = {
 			"dantata_town.dantata_town.utils.validate_project_subtype_matches_type",
 		],
 	},
+	"Quotation": {
+		"validate": "dantata_town.dantata_town.quotation.validate_quotation_payment_type",
+	},
 	"Purchase Receipt": {
 		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty",
 		"on_cancel": "dantata_town.dantata_town.utils.reverse_boq_consumed_qty",
