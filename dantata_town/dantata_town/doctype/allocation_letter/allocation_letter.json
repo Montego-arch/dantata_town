@@ -1,0 +1,282 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-04-20 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "letter_date",
+  "column_break_header",
+  "sales_order",
+  "customer",
+  "customer_name",
+  "addressee_section",
+  "addressee_name",
+  "addressee_address",
+  "property_section",
+  "property_type",
+  "property_description",
+  "location_scheme",
+  "plot_number",
+  "column_break_property",
+  "purchase_price_option",
+  "cost_of_property",
+  "payment_duration",
+  "schedule_section",
+  "installment_schedule",
+  "approval_section",
+  "approved_by",
+  "approved_on",
+  "column_break_approval",
+  "terms_snapshot",
+  "signature_section",
+  "chairman_name",
+  "company_name",
+  "amend_section",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "ALL-.YYYY.-.#####",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "letter_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Letter Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_header",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "sales_order.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "addressee_section",
+   "fieldtype": "Section Break",
+   "label": "Addressee"
+  },
+  {
+   "fieldname": "addressee_name",
+   "fieldtype": "Data",
+   "label": "Addressee Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "addressee_address",
+   "fieldtype": "Small Text",
+   "label": "Addressee Address"
+  },
+  {
+   "fieldname": "property_section",
+   "fieldtype": "Section Break",
+   "label": "Property"
+  },
+  {
+   "fieldname": "property_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "\nResidential\nCommercial",
+   "reqd": 1
+  },
+  {
+   "fieldname": "property_description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_scheme",
+   "fieldtype": "Small Text",
+   "label": "Location / Scheme",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plot_number",
+   "fieldtype": "Data",
+   "label": "House / Plot Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_property",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "purchase_price_option",
+   "fieldtype": "Select",
+   "label": "Purchase Price Option",
+   "options": "\nInstallment\nOutright",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cost_of_property",
+   "fieldtype": "Currency",
+   "label": "Cost of Property",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.purchase_price_option === 'Installment'",
+   "fieldname": "payment_duration",
+   "fieldtype": "Data",
+   "label": "Payment Duration"
+  },
+  {
+   "depends_on": "eval:doc.purchase_price_option === 'Installment'",
+   "fieldname": "schedule_section",
+   "fieldtype": "Section Break",
+   "label": "Payment Schedule"
+  },
+  {
+   "depends_on": "eval:doc.purchase_price_option === 'Installment'",
+   "fieldname": "installment_schedule",
+   "fieldtype": "Table",
+   "label": "Installment Schedule",
+   "options": "Allocation Letter Installment"
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "terms_snapshot",
+   "fieldtype": "Text Editor",
+   "label": "Terms Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signature_section",
+   "fieldtype": "Section Break",
+   "label": "Signature"
+  },
+  {
+   "fieldname": "chairman_name",
+   "fieldtype": "Data",
+   "label": "Chairman Name"
+  },
+  {
+   "default": "Dantata Town Developers Ltd",
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
+  },
+  {
+   "fieldname": "amend_section",
+   "fieldtype": "Section Break",
+   "label": "Amendment"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Allocation Letter",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-04-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dantata Town",
+ "name": "Allocation Letter",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
