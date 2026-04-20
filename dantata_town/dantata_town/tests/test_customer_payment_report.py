@@ -230,3 +230,54 @@ class TestCustomerPaymentReport(FrappeTestCase):
 		self.assertGreaterEqual(len(recent), 1)
 		doc = frappe.get_single("Customer Payment Report Settings")
 		self.assertEqual(doc.last_sent_status, "Success")
+
+	def test_send_report_now_disabled_rejected(self):
+		from dantata_town.dantata_town.reports import send_report_now
+		self._reset_settings(enabled=0)
+		with self.assertRaises(frappe.ValidationError):
+			send_report_now()
+
+	def test_send_report_now_sends_regardless_of_day(self):
+		"""Send Now bypasses day/last-sent checks."""
+		from dantata_town.dantata_town.reports import send_report_now
+		today = frappe.utils.getdate()
+		other_day = 28 if today.day != 28 else 27
+		self._reset_settings(enabled=1, day=other_day, last_sent_date=today)
+		before = self._count_queued_emails("Monthly Customer Payment Report")
+		send_report_now()
+		after = self._count_queued_emails("Monthly Customer Payment Report")
+		self.assertEqual(after, before + 1)
+		doc = frappe.get_single("Customer Payment Report Settings")
+		self.assertEqual(doc.last_sent_status, "Success")
+
+	def test_send_report_now_requires_privileged_role(self):
+		"""Accounts User lacks permission; System Manager / Accounts Manager do."""
+		from dantata_town.dantata_town.reports import send_report_now
+		self._reset_settings(enabled=1, day=1)
+
+		# Find or create an Accounts User with none of the privileged roles.
+		test_user_email = "cpr_accounts_user@example.com"
+		if not frappe.db.exists("User", test_user_email):
+			user = frappe.get_doc({
+				"doctype": "User",
+				"email": test_user_email,
+				"first_name": "CPR",
+				"last_name": "Accounts User",
+				"enabled": 1,
+				"roles": [{"role": "Accounts User"}],
+				"send_welcome_email": 0,
+			})
+			user.insert(ignore_permissions=True)
+
+		original_user = frappe.session.user
+		# frappe.only_for() is a no-op when flags.in_test is True, so disable it
+		# for the duration of this check to exercise the real permission branch.
+		original_in_test = frappe.flags.in_test
+		frappe.flags.in_test = False
+		frappe.set_user(test_user_email)
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				send_report_now()
+		finally:
+			frappe.set_user(original_user)
+			frappe.flags.in_test = original_in_test

@@ -140,3 +140,19 @@ def send_monthly_customer_payment_report():
 	except Exception:
 		_record_status(settings, "Failed")
 		raise
+
+
+@frappe.whitelist()
+def send_report_now():
+	"""Manual trigger from the Settings Single toolbar — sends immediately."""
+	frappe.only_for(["System Manager", "Accounts Manager"])
+	settings = frappe.get_single("Customer Payment Report Settings")
+	if not settings.enabled:
+		frappe.throw(_("Enable the report before sending."))
+	today = frappe.utils.getdate()
+	try:
+		_send_report_email(settings, today)
+		_record_status(settings, "Success", sent_date=today)
+	except Exception:
+		_record_status(settings, "Failed")
+		raise
