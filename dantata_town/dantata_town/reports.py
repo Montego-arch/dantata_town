@@ -103,7 +103,7 @@ def _send_report_email(settings, today):
 		recipients=recipients,
 		subject=_("Monthly Customer Payment Report — {0}").format(month_label),
 		message=html,
-		now=True,
+		now=False,
 	)
 
 
@@ -114,3 +114,29 @@ def _record_status(settings, status, sent_date=None):
 	frappe.db.set_value(
 		"Customer Payment Report Settings", None, updates, update_modified=False
 	)
+
+
+def send_monthly_customer_payment_report():
+	"""Scheduled daily; sends the monthly digest when today is the configured day.
+	Always records status so silent failures surface visibly.
+	"""
+	settings = frappe.get_single("Customer Payment Report Settings")
+	today = frappe.utils.getdate()
+
+	if not settings.enabled:
+		_record_status(settings, "Skipped (disabled)")
+		return
+	if today.day != int(settings.send_day_of_month):
+		_record_status(settings, "Skipped (wrong day)")
+		return
+	# Double-send guard: the scheduler may retry within the same day.
+	if settings.last_sent_date and frappe.utils.getdate(settings.last_sent_date) == today:
+		_record_status(settings, "Success")
+		return
+
+	try:
+		_send_report_email(settings, today)
+		_record_status(settings, "Success", sent_date=today)
+	except Exception:
+		_record_status(settings, "Failed")
+		raise

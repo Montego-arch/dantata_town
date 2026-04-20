@@ -4,8 +4,28 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+# Ensure a default outgoing Email Account exists so queueing the report email
+# succeeds in the test site (which otherwise has no email account configured).
+test_dependencies = ["Email Account"]
+
 
 class TestCustomerPaymentReport(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		# Promote the test email account to default_outgoing so frappe.sendmail
+		# can resolve a sender when queueing the report.
+		if frappe.db.exists("Email Account", "_Test Email Account 1"):
+			frappe.db.set_value(
+				"Email Account", "_Test Email Account 1",
+				{"default_outgoing": 1, "enable_outgoing": 1},
+			)
+		# Also bust Frappe's per-process email-account cache so the promotion
+		# is visible to subsequent find_outgoing() calls.
+		for attr in ("outgoing_email_account", "incoming_email_account"):
+			if hasattr(frappe.local, attr):
+				delattr(frappe.local, attr)
+
 	def _settings(self, **overrides):
 		"""Load the single, apply overrides, return the doc."""
 		doc = frappe.get_single("Customer Payment Report Settings")
@@ -122,3 +142,91 @@ class TestCustomerPaymentReport(FrappeTestCase):
 			tested_any = True
 		if not tested_any:
 			self.skipTest("No outstanding SI → SO → submitted AL path present on this site")
+
+	def _reset_settings(self, enabled=1, day=1, emails="a@example.com", last_sent_date=None, last_sent_status=None):
+		"""Reset the single to a known baseline."""
+		doc = frappe.get_single("Customer Payment Report Settings")
+		doc.enabled = enabled
+		doc.send_day_of_month = day
+		doc.recipient_emails = emails
+		doc.last_sent_date = last_sent_date
+		doc.last_sent_status = last_sent_status
+		doc.save(ignore_permissions=True)
+
+	def _count_queued_emails(self, subject_substring):
+		return frappe.db.count(
+			"Email Queue",
+			{"message": ("like", f"%{subject_substring}%")},
+		)
+
+	def test_scheduled_disabled_skips(self):
+		from dantata_town.dantata_town.reports import send_monthly_customer_payment_report
+		self._reset_settings(enabled=0)
+		before = self._count_queued_emails("Monthly Customer Payment Report")
+		send_monthly_customer_payment_report()
+		after = self._count_queued_emails("Monthly Customer Payment Report")
+		self.assertEqual(after, before)
+		doc = frappe.get_single("Customer Payment Report Settings")
+		self.assertEqual(doc.last_sent_status, "Skipped (disabled)")
+
+	def test_scheduled_wrong_day_skips(self):
+		from dantata_town.dantata_town.reports import send_monthly_customer_payment_report
+		today = frappe.utils.getdate()
+		other_day = 28 if today.day != 28 else 27
+		self._reset_settings(enabled=1, day=other_day)
+		before = self._count_queued_emails("Monthly Customer Payment Report")
+		send_monthly_customer_payment_report()
+		after = self._count_queued_emails("Monthly Customer Payment Report")
+		self.assertEqual(after, before)
+		doc = frappe.get_single("Customer Payment Report Settings")
+		self.assertEqual(doc.last_sent_status, "Skipped (wrong day)")
+
+	def test_scheduled_right_day_sends(self):
+		from dantata_town.dantata_town.reports import send_monthly_customer_payment_report
+		today = frappe.utils.getdate()
+		self._reset_settings(enabled=1, day=today.day, last_sent_date=None)
+		before = self._count_queued_emails("Monthly Customer Payment Report")
+		send_monthly_customer_payment_report()
+		after = self._count_queued_emails("Monthly Customer Payment Report")
+		self.assertEqual(after, before + 1)
+		doc = frappe.get_single("Customer Payment Report Settings")
+		self.assertEqual(doc.last_sent_status, "Success")
+		self.assertEqual(frappe.utils.getdate(doc.last_sent_date), today)
+
+	def test_scheduled_double_send_guard(self):
+		from dantata_town.dantata_town.reports import send_monthly_customer_payment_report
+		today = frappe.utils.getdate()
+		self._reset_settings(enabled=1, day=today.day, last_sent_date=today)
+		before = self._count_queued_emails("Monthly Customer Payment Report")
+		send_monthly_customer_payment_report()
+		after = self._count_queued_emails("Monthly Customer Payment Report")
+		self.assertEqual(after, before)  # no new email
+		doc = frappe.get_single("Customer Payment Report Settings")
+		self.assertEqual(doc.last_sent_status, "Success")
+
+	def test_scheduled_empty_rows_still_sends(self):
+		"""When there are no outstanding invoices, the email still goes out with
+		the empty-state body so silence doesn't mask a silent failure."""
+		from dantata_town.dantata_town import reports
+		from dantata_town.dantata_town.reports import send_monthly_customer_payment_report
+		today = frappe.utils.getdate()
+		self._reset_settings(enabled=1, day=today.day, last_sent_date=None)
+
+		original = reports.build_customer_payment_report_rows
+		reports.build_customer_payment_report_rows = lambda: []
+		try:
+			before = self._count_queued_emails("Monthly Customer Payment Report")
+			send_monthly_customer_payment_report()
+			after = self._count_queued_emails("Monthly Customer Payment Report")
+			self.assertEqual(after, before + 1)
+		finally:
+			reports.build_customer_payment_report_rows = original
+
+		recent = frappe.get_all(
+			"Email Queue",
+			filters={"message": ("like", "%No outstanding balances this month%")},
+			pluck="name",
+		)
+		self.assertGreaterEqual(len(recent), 1)
+		doc = frappe.get_single("Customer Payment Report Settings")
+		self.assertEqual(doc.last_sent_status, "Success")
