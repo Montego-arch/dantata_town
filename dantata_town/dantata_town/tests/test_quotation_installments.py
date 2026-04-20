@@ -198,3 +198,39 @@ class TestQuotationInstallments(FrappeTestCase):
 		self.assertEqual(str(doc.payment_schedule[1].due_date), "2026-02-28")
 		# Second monthly: March's 31st.
 		self.assertEqual(str(doc.payment_schedule[2].due_date), "2026-03-31")
+
+	def test_generate_rejects_deposit_ge_total(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation(installment_deposit_amount=60000)  # total=50000
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		with self.assertRaises(frappe.ValidationError):
+			generate_installment_schedule(doc.name)
+
+	def test_generate_rejects_months_below_1(self):
+		create_boq_custom_fields()
+		doc = self._new_quotation(installment_months=0)
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		with self.assertRaises(frappe.ValidationError):
+			generate_installment_schedule(doc.name)
+
+	def test_generate_is_idempotent(self):
+		"""Running twice produces the same row count and amounts — no accumulation."""
+		create_boq_custom_fields()
+		doc = self._new_quotation()
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		generate_installment_schedule(doc.name)
+		doc.reload()
+		first_rows = [(r.payment_amount, r.due_date) for r in doc.payment_schedule]
+
+		generate_installment_schedule(doc.name)
+		doc.reload()
+		second_rows = [(r.payment_amount, r.due_date) for r in doc.payment_schedule]
+
+		self.assertEqual(first_rows, second_rows)
+		self.assertEqual(len(doc.payment_schedule), 5)
