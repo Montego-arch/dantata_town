@@ -281,3 +281,16 @@ class TestCustomerPaymentReport(FrappeTestCase):
 		finally:
 			frappe.set_user(original_user)
 			frappe.flags.in_test = original_in_test
+
+	def test_script_report_execute_shape(self):
+		from dantata_town.dantata_town.report.customer_payment_report.customer_payment_report import execute
+		columns, data = execute(filters=None)
+		self.assertEqual(len(columns), 9)
+		expected_fieldnames = [
+			"customer", "customer_name", "name", "posting_date", "due_date",
+			"outstanding_amount", "property_type", "property_description", "plot_number",
+		]
+		self.assertEqual([c["fieldname"] for c in columns], expected_fieldnames)
+		# Data shape matches the aggregation helper's output.
+		from dantata_town.dantata_town.reports import build_customer_payment_report_rows
+		self.assertEqual(data, build_customer_payment_report_rows())
