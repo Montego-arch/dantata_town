@@ -48,6 +48,7 @@ doctype_js = {
 	"Sales Order": "public/js/sales_order.js",
 	"Allocation Letter": "public/js/allocation_letter.js",
 	"Quotation": "public/js/quotation.js",
+	"Customer Payment Report Settings": "public/js/customer_payment_report_settings.js",
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -183,6 +184,12 @@ doc_events = {
 # 		"dantata_town.tasks.monthly"
 # 	],
 # }
+
+scheduler_events = {
+	"daily": [
+		"dantata_town.dantata_town.reports.send_monthly_customer_payment_report",
+	],
+}
 
 # Testing
 # -------
