@@ -148,3 +148,53 @@ class TestQuotationInstallments(FrappeTestCase):
 
 		total = sum(flt(row.payment_amount) for row in doc.payment_schedule)
 		self.assertEqual(total, flt(doc.grand_total))
+
+	def test_generate_last_row_absorbs_rounding_drift(self):
+		"""deposit=10000, total=40001, months=3 → balance=30001, per_month=10000.33,
+		last row = 10000.34 (absorbs the 0.01 drift)."""
+		create_boq_custom_fields()
+		# Use rate=40001 to force non-even division.
+		doc = self._new_quotation(
+			items=[{
+				"item_code": frappe.db.get_value(
+					"Item", {"disabled": 0, "is_sales_item": 1}, "name"
+				),
+				"qty": 1,
+				"rate": 40001,
+			}],
+			installment_deposit_amount=10000,
+			installment_months=3,
+		)
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		generate_installment_schedule(doc.name)
+		doc.reload()
+
+		# Rows 1 and 2 should be equal; row 3 (last) should differ by the rounding drift.
+		self.assertEqual(flt(doc.payment_schedule[1].payment_amount), 10000.33)
+		self.assertEqual(flt(doc.payment_schedule[2].payment_amount), 10000.33)
+		self.assertEqual(flt(doc.payment_schedule[3].payment_amount), 10000.34)
+		# Sum still equals grand_total.
+		total = sum(flt(row.payment_amount) for row in doc.payment_schedule)
+		self.assertEqual(total, flt(doc.grand_total))
+
+	def test_generate_due_dates_step_monthly_with_add_months(self):
+		"""start=2026-01-31, months=2. First monthly row due end of Feb, second end of Mar."""
+		create_boq_custom_fields()
+		doc = self._new_quotation(
+			installment_start_date="2026-01-31",
+			installment_months=2,
+		)
+		doc.insert(ignore_permissions=True)
+
+		from dantata_town.dantata_town.quotation import generate_installment_schedule
+		generate_installment_schedule(doc.name)
+		doc.reload()
+
+		# Deposit row: exact start date.
+		self.assertEqual(str(doc.payment_schedule[0].due_date), "2026-01-31")
+		# First monthly: Feb's last day (28 in 2026, non-leap).
+		self.assertEqual(str(doc.payment_schedule[1].due_date), "2026-02-28")
+		# Second monthly: March's 31st.
+		self.assertEqual(str(doc.payment_schedule[2].due_date), "2026-03-31")
