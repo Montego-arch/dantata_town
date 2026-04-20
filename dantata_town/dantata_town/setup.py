@@ -75,6 +75,57 @@ def _create_custom_fields():
 				"module": "Dantata Town",
 			},
 		],
+		"Quotation": [
+			{
+				"fieldname": "dt_installment_section",
+				"fieldtype": "Section Break",
+				"label": "Payment Type",
+				"insert_after": "terms_tab",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "payment_type",
+				"fieldtype": "Select",
+				"label": "Payment Type",
+				"options": "\nInstallment\nOutright",
+				"reqd": 1,
+				"insert_after": "dt_installment_section",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "installment_column_break",
+				"fieldtype": "Column Break",
+				"insert_after": "payment_type",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "installment_start_date",
+				"fieldtype": "Date",
+				"label": "Installment Start Date",
+				"insert_after": "installment_column_break",
+				"depends_on": "eval:doc.payment_type === 'Installment'",
+				"mandatory_depends_on": "eval:doc.payment_type === 'Installment'",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "installment_deposit_amount",
+				"fieldtype": "Currency",
+				"label": "Installment Deposit Amount",
+				"insert_after": "installment_start_date",
+				"depends_on": "eval:doc.payment_type === 'Installment'",
+				"mandatory_depends_on": "eval:doc.payment_type === 'Installment'",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "installment_months",
+				"fieldtype": "Int",
+				"label": "Installment Months",
+				"insert_after": "installment_deposit_amount",
+				"depends_on": "eval:doc.payment_type === 'Installment'",
+				"mandatory_depends_on": "eval:doc.payment_type === 'Installment'",
+				"module": "Dantata Town",
+			},
+		],
 	}
 	create_custom_fields(custom_fields, update=True)
 
