@@ -2,11 +2,21 @@ import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
+PROJECT_TYPE_SEED = {
+	"Building": ["PLOT", "DPC", "CARCASS", "SHELL", "FINISHED"],
+	"Infrastructure": [
+		"Roads", "Drainages", "Kerbstone", "Water Reticulation", "Electrification",
+	],
+}
+
+
 def create_boq_custom_fields():
-	"""Create custom fields on ERPNext doctypes for BOQ and Site traceability."""
+	"""Create custom fields on ERPNext doctypes for BOQ and Site traceability,
+	and seed Dantata Town project classification data."""
 	_create_custom_fields()
 	_create_property_setters()
 	_cleanup_broken_project_links()
+	_seed_project_types_and_subtypes()
 
 
 def _create_custom_fields():
@@ -83,3 +93,24 @@ def _cleanup_broken_project_links():
 	}, pluck="name"):
 		frappe.delete_doc("DocType Link", link, force=True)
 	frappe.clear_cache(doctype="Project")
+
+
+def _seed_project_types_and_subtypes():
+	"""Seed the Building/Infrastructure types and their subtypes.
+
+	Idempotent: existing Internal/External/Other are never touched.
+	"""
+	for project_type, subtypes in PROJECT_TYPE_SEED.items():
+		if not frappe.db.exists("Project Type", project_type):
+			frappe.get_doc({
+				"doctype": "Project Type",
+				"project_type": project_type,
+			}).insert(ignore_permissions=True)
+
+		for subtype in subtypes:
+			if not frappe.db.exists("Project Subtype", subtype):
+				frappe.get_doc({
+					"doctype": "Project Subtype",
+					"subtype_name": subtype,
+					"project_type": project_type,
+				}).insert(ignore_permissions=True)
