@@ -39,3 +39,29 @@ class TestProjectTypeSetup(FrappeTestCase):
 		create_boq_custom_fields()
 		second_count = frappe.db.count("Project Subtype")
 		self.assertEqual(first_count, second_count)
+
+	def test_project_subtype_custom_field_exists(self):
+		create_boq_custom_fields()
+		field = frappe.db.get_value(
+			"Custom Field",
+			{"dt": "Project", "fieldname": "project_subtype"},
+			["fieldtype", "options", "depends_on", "link_filters"],
+			as_dict=True,
+		)
+		self.assertIsNotNone(field, "project_subtype custom field not found on Project")
+		self.assertEqual(field.fieldtype, "Link")
+		self.assertEqual(field.options, "Project Subtype")
+		self.assertEqual(field.depends_on, "eval:doc.project_type")
+		self.assertEqual(
+			field.link_filters,
+			'[["Project Subtype","project_type","=","eval:doc.project_type"]]',
+		)
+
+	def test_project_type_is_required(self):
+		create_boq_custom_fields()
+		ps = frappe.db.get_value(
+			"Property Setter",
+			{"doc_type": "Project", "field_name": "project_type", "property": "reqd"},
+			"value",
+		)
+		self.assertEqual(ps, "1")

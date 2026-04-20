@@ -74,7 +74,7 @@ Installed via `create_custom_fields` in `setup.py`:
         "options": "Project Subtype",
         "insert_after": "project_type",
         "depends_on": "eval:doc.project_type",
-        "link_filters": '[["Project Subtype","project_type","=",doc.project_type]]',
+        "link_filters": '[["Project Subtype","project_type","=","eval:doc.project_type"]]',
         "module": "Dantata Town",
     },
 ]

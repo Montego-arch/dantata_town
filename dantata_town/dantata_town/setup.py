@@ -64,6 +64,16 @@ def _create_custom_fields():
 				"reqd": 1,
 				"module": "Dantata Town",
 			},
+			{
+				"fieldname": "project_subtype",
+				"fieldtype": "Link",
+				"label": "Project Subtype",
+				"options": "Project Subtype",
+				"insert_after": "project_type",
+				"depends_on": "eval:doc.project_type",
+				"link_filters": '[["Project Subtype","project_type","=","eval:doc.project_type"]]',
+				"module": "Dantata Town",
+			},
 		],
 	}
 	create_custom_fields(custom_fields, update=True)
@@ -74,6 +84,7 @@ def _create_property_setters():
 	property_setters = [
 		("Project", "customer", "reqd", "1", "Check"),
 		("Project", "customer", "allow_in_quick_entry", "1", "Check"),
+		("Project", "project_type", "reqd", "1", "Check"),
 	]
 	for doctype, fieldname, prop, value, prop_type in property_setters:
 		frappe.make_property_setter({

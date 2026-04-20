@@ -430,7 +430,7 @@ Append to `dantata_town/dantata_town/tests/test_project_type_setup.py` inside `T
 		self.assertEqual(field.depends_on, "eval:doc.project_type")
 		self.assertEqual(
 			field.link_filters,
-			'[["Project Subtype","project_type","=",doc.project_type]]',
+			'[["Project Subtype","project_type","=","eval:doc.project_type"]]',
 		)
 
 	def test_project_type_is_required(self):
@@ -462,7 +462,7 @@ In `dantata_town/dantata_town/setup.py`:
 				"options": "Project Subtype",
 				"insert_after": "project_type",
 				"depends_on": "eval:doc.project_type",
-				"link_filters": '[["Project Subtype","project_type","=",doc.project_type]]',
+				"link_filters": '[["Project Subtype","project_type","=","eval:doc.project_type"]]',
 				"module": "Dantata Town",
 			},
 ```
