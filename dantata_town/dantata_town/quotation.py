@@ -26,12 +26,16 @@ def generate_installment_schedule(quotation_name):
 
 	# Only payment_amount is set; invoice_portion is intentionally omitted so
 	# ERPNext's set_payment_schedule does not back-compute amounts from a
-	# rounded percentage (which loses kobo on large totals).
+	# rounded percentage (which loses kobo on large totals). The percentage
+	# is folded into the description for visibility instead.
+	def _pct(amount):
+		return flt(amount / total * 100, 2)
+
 	doc.set("payment_schedule", [])
 	doc.append("payment_schedule", {
 		"due_date": start,
 		"payment_amount": deposit,
-		"description": _("Deposit"),
+		"description": _("Deposit ({0}%)").format(_pct(deposit)),
 	})
 	for i in range(1, months + 1):
 		is_last = i == months
@@ -39,7 +43,9 @@ def generate_installment_schedule(quotation_name):
 		doc.append("payment_schedule", {
 			"due_date": add_months(start, i),
 			"payment_amount": amount,
-			"description": _("Installment {0} of {1}").format(i, months),
+			"description": _("Installment {0} of {1} ({2}%)").format(
+				i, months, _pct(amount)
+			),
 		})
 	doc.save()
 	return doc
