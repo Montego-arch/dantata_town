@@ -207,7 +207,8 @@ scheduler_events = {
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 override_doctype_dashboards = {
-	"Project": "dantata_town.dantata_town.overrides.get_project_dashboard_data"
+	"Project": "dantata_town.dantata_town.overrides.get_project_dashboard_data",
+	"Sales Order": "dantata_town.dantata_town.overrides.get_sales_order_dashboard_data",
 }
 
 # exempt linked doctypes from being automatically cancelled

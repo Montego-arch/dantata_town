@@ -11,3 +11,13 @@ def get_project_dashboard_data(data):
 	})
 
 	return data
+
+
+def get_sales_order_dashboard_data(data):
+	"""Add Allocation Letter to Sales Order's connections/dashboard."""
+	data["transactions"].append({
+		"label": _("Allocation"),
+		"items": ["Allocation Letter"],
+	})
+
+	return data
