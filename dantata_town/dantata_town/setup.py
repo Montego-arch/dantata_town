@@ -131,11 +131,14 @@ def _create_custom_fields():
 
 
 def _create_property_setters():
-	"""Set customer as mandatory and allow in quick entry on Project."""
+	"""Set customer as mandatory and allow in quick entry on Project, and
+	hide the unused invoice_portion column on the Payment Schedule grid
+	(percentage is folded into the description for installment plans)."""
 	property_setters = [
 		("Project", "customer", "reqd", "1", "Check"),
 		("Project", "customer", "allow_in_quick_entry", "1", "Check"),
 		("Project", "project_type", "reqd", "1", "Check"),
+		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
 	]
 	for doctype, fieldname, prop, value, prop_type in property_setters:
 		frappe.make_property_setter({
