@@ -20,8 +20,9 @@ class AllocationLetter(Document):
 				frappe.throw(_("Payment Duration is required for installment offers."))
 			if not self.installment_schedule:
 				frappe.throw(_("Add at least one installment row for installment offers."))
-			total = sum(flt(row.amount) for row in self.installment_schedule)
-			if flt(total) != flt(self.cost_of_property):
+			precision = self.precision("cost_of_property")
+			total = sum(flt(row.amount, precision) for row in self.installment_schedule)
+			if flt(total, precision) != flt(self.cost_of_property, precision):
 				currency = frappe.defaults.get_global_default("currency")
 				frappe.throw(_(
 					"Installment schedule total ({0}) does not match Cost of Property ({1})."
