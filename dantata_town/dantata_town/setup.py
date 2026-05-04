@@ -174,6 +174,36 @@ def _create_custom_fields():
 				"in_list_view": 1,
 				"module": "Dantata Town",
 			},
+			{
+				"fieldname": "assignment_type",
+				"fieldtype": "Select",
+				"label": "Assignment Type",
+				"options": "Company\nSub Contractor",
+				"default": "Company",
+				"insert_after": "completed",
+				"allow_on_submit": 1,
+				"in_list_view": 1,
+				"module": "Dantata Town",
+			},
+		],
+		"Purchase Invoice": [
+			{
+				"fieldname": "site",
+				"fieldtype": "Link",
+				"label": "Site",
+				"options": "Site",
+				"insert_after": "company",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "sub_contractor_payment_request",
+				"fieldtype": "Link",
+				"label": "Sub Contractor Payment Request",
+				"options": "Sub Contractor Payment Request",
+				"insert_after": "site",
+				"read_only": 1,
+				"module": "Dantata Town",
+			},
 		],
 	}
 
