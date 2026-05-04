@@ -61,7 +61,7 @@ Frappe app tests are run from the bench directory, not the app directory. Path:
 ```
 Verify:
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost list-apps
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com list-apps
 ```
 Expected: dantata_town listed. (If a different site name is used in this dev env, substitute it in every `bench --site` command below.)
 
@@ -177,7 +177,7 @@ class TestRenameProjectUnitItemFields(FrappeTestCase):
 - [ ] **Step 2.2: Run test — expect ImportError or ModuleNotFoundError**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_rename_project_unit_item_fields
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_rename_project_unit_item_fields
 ```
 Expected: failure on `from dantata_town.patches.rename_project_unit_item_fields import execute` because the module doesn't exist yet.
 
@@ -226,14 +226,14 @@ dantata_town.patches.rename_project_unit_item_fields
 - [ ] **Step 2.6: Run the patch once against the dev site**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost migrate
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com migrate
 ```
 Expected: migrate runs, the new patch executes, no errors. (If the site already had data on the old fieldnames, those rows now read under the new fieldnames.)
 
 - [ ] **Step 2.7: Run tests — expect pass**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_rename_project_unit_item_fields
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_rename_project_unit_item_fields
 ```
 Expected: 2 tests pass.
 
@@ -322,7 +322,7 @@ class TestProjectFinancialFields(FrappeTestCase):
 - [ ] **Step 3.2: Run tests — expect failures**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
 ```
 Expected: 3 failures — `building_type`, `dt_financials_section` etc., and the property setters not present.
 
@@ -385,14 +385,14 @@ In the same file, append to the `property_setters` list:
 - [ ] **Step 3.5: Run install hook against the dev site**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost migrate
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com migrate
 ```
 Expected: success; the new fields and property setters are created.
 
 - [ ] **Step 3.6: Run tests — expect pass**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
 ```
 Expected: 3 tests pass.
 
@@ -467,7 +467,7 @@ class TestRecalcProjectTotals(FrappeTestCase):
 - [ ] **Step 4.2: Run tests — expect ImportError**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
 ```
 Expected: failure on `from dantata_town.dantata_town.project_aggregations import recalc_project_totals` — module not found.
 
@@ -672,7 +672,7 @@ def get_site_building_types(doctype, txt, searchfield, start, page_len, filters)
 - [ ] **Step 4.4: Run tests — expect pass on the two no-op tests**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
 ```
 Expected: all current tests pass (the runtime end-to-end tests come in Task 5).
 
@@ -748,7 +748,7 @@ class TestProjectAggregationHooks(FrappeTestCase):
 - [ ] **Step 5.2: Run tests — expect failures**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
 ```
 Expected: PI tests fail because nothing recalculates totals on submit yet (project_expenses stays 0 after a submit).
 
@@ -776,12 +776,12 @@ doc_events = {
 	},
 }
 ```
-Run `bench --site dantata.localhost clear-cache` so the new hooks load.
+Run `bench --site home.com clear-cache` so the new hooks load.
 
 - [ ] **Step 5.4: Run tests — expect pass**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_project_aggregations
 ```
 Expected: all tests pass.
 
@@ -847,7 +847,7 @@ frappe.ui.form.on("Project", {
 - [ ] **Step 6.3: Manual verify in browser**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost clear-cache
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com clear-cache
 ```
 Open a draft Project, set Site → confirm Building Type dropdown shows only items present in that Site's `project_units`. Change Site → confirm Building Type clears.
 
@@ -922,7 +922,7 @@ class TestBOQStageFieldsInstalled(FrappeTestCase):
 - [ ] **Step 7.2: Run tests — expect failures**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_boq_progress
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_boq_progress
 ```
 Expected: all assertions fail (fields not registered yet).
 
@@ -986,14 +986,14 @@ Inside `_create_custom_fields()`, after the static `custom_fields` dict is built
 - [ ] **Step 7.5: Run install hook**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost migrate
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com migrate
 ```
 Expected: success; 1 + 35 = 36 new custom fields registered.
 
 - [ ] **Step 7.6: Run tests — expect pass**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_boq_progress
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_boq_progress
 ```
 Expected: 2 tests pass.
 
@@ -1163,7 +1163,7 @@ class TestValidateStageDates(FrappeTestCase):
 - [ ] **Step 8.2: Run tests — expect ImportError**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_boq_progress
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_boq_progress
 ```
 Expected: failure on `from dantata_town.dantata_town.boq_progress import ...` — module not found.
 
@@ -1237,7 +1237,7 @@ def recalc_boq_progress(doc, method=None):
 - [ ] **Step 8.4: Run tests — expect pass**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --module dantata_town.dantata_town.tests.test_boq_progress
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --module dantata_town.dantata_town.tests.test_boq_progress
 ```
 Expected: all tests pass.
 
@@ -1353,7 +1353,7 @@ frappe.ui.form.on("BOQ Items", {
 - [ ] **Step 9.4: Reload site & verify**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost clear-cache
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com clear-cache
 ```
 
 Browser check:
@@ -1377,7 +1377,7 @@ git commit -m "feat: wire BOQ stage progress validate hooks + live form script"
 - [ ] **Step 10.1: Run the full test module**
 
 ```bash
-cd /home/okeke/clients/graceco/frappe-bench && bench --site dantata.localhost run-tests --app dantata_town
+cd /home/okeke/clients/graceco/frappe-bench && bench --site home.com run-tests --app dantata_town
 ```
 Expected: all dantata_town tests pass (existing + the 3 new test files).
 
