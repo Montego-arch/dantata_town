@@ -17,8 +17,15 @@ def make_request_from_boq(boq: str, supplier: str, date: str, selected) -> str:
 	so the at-submit diff has stable reference values even if the source BOQ is
 	later amended.
 	"""
+	from frappe.utils import getdate
+
 	if not frappe.db.exists("Bill of Quantities", boq):
 		frappe.throw(_("BOQ {0} does not exist").format(boq))
+
+	# Enforce read permission on the source BOQ — prevents leaking site/project
+	# names to a caller who can submit SCPRs but shouldn't see the BOQ.
+	frappe.has_permission("Bill of Quantities", "read", boq, throw=True)
+
 	if frappe.db.get_value("Bill of Quantities", boq, "docstatus") != 1:
 		frappe.throw(_(
 			"BOQ {0} must be submitted before generating a payment request"
@@ -28,12 +35,24 @@ def make_request_from_boq(boq: str, supplier: str, date: str, selected) -> str:
 	if not rows:
 		frappe.throw(_("Select at least one line"))
 
+	# Each row must carry description, quantity, rate. Missing keys would
+	# otherwise raise a confusing KeyError instead of a user-readable message.
+	for r in rows:
+		for required in ("description", "quantity", "rate"):
+			if required not in r or r[required] in (None, ""):
+				frappe.throw(_("Each selected row must have description, quantity, and rate"))
+
+	try:
+		validated_date = getdate(date)
+	except Exception:
+		frappe.throw(_("Invalid date: {0}").format(date))
+
 	site, project = frappe.db.get_value(
 		"Bill of Quantities", boq, ["site", "project"]
 	)
 
 	req = frappe.new_doc("Sub Contractor Payment Request")
-	req.date = date
+	req.date = validated_date
 	req.site = site
 	req.project = project
 	req.boq = boq
