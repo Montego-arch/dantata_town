@@ -70,3 +70,69 @@ def make_request_from_boq(boq: str, supplier: str, date: str, selected) -> str:
 		})
 	req.insert(ignore_permissions=False)
 	return req.name
+
+
+from frappe.utils import today, add_days
+
+
+@frappe.whitelist()
+def make_purchase_invoice(request_name: str) -> str:
+	"""Create a draft Purchase Invoice from an approved Sub Contractor Payment Request.
+
+	Validates:
+	- request is submitted (docstatus = 1)
+	- workflow_state is "Approved" (when set; tests with no workflow leave it empty)
+	- Site has an expense_account configured
+	- "Sub Contractor Cost" Item exists
+
+	Returns the name of the created (draft) Purchase Invoice.
+	"""
+	if not frappe.db.exists("Sub Contractor Payment Request", request_name):
+		frappe.throw(_("Sub Contractor Payment Request {0} does not exist").format(request_name))
+
+	req = frappe.get_doc("Sub Contractor Payment Request", request_name)
+
+	if req.docstatus != 1:
+		frappe.throw(_("Request must be submitted to create a Purchase Invoice"))
+
+	workflow_state = getattr(req, "workflow_state", None)
+	if workflow_state and workflow_state != "Approved":
+		frappe.throw(_(
+			"Request must be in Approved state to create a Purchase Invoice "
+			"(currently {0})"
+		).format(workflow_state))
+
+	expense_account = frappe.db.get_value("Site", req.site, "expense_account")
+	if not expense_account:
+		frappe.throw(_(
+			"Set Expense Account on Site '{0}' before creating a Purchase Invoice"
+		).format(req.site))
+
+	if not frappe.db.exists("Item", "Sub Contractor Cost"):
+		frappe.throw(_(
+			"Create an Item named 'Sub Contractor Cost' before using this feature"
+		))
+
+	# Resolve the company from the Project so the PI's company dimension
+	# validation (which checks Project.company == PI.company) passes.
+	company = frappe.db.get_value("Project", req.project, "company") \
+		if req.project else None
+
+	pi = frappe.new_doc("Purchase Invoice")
+	pi.supplier = req.supplier
+	pi.posting_date = today()
+	pi.due_date = add_days(today(), 30)
+	pi.site = req.site
+	pi.sub_contractor_payment_request = req.name
+	if company:
+		pi.company = company
+	pi.append("items", {
+		"item_code": "Sub Contractor Cost",
+		"qty": 1,
+		"rate": flt(req.total_amount),
+		"project": req.project,
+		"expense_account": expense_account,
+	})
+	pi.set_missing_values()
+	pi.insert(ignore_permissions=False)
+	return pi.name

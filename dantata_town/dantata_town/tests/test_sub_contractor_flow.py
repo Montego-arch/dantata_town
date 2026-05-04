@@ -217,3 +217,160 @@ class TestMakeRequestFromBOQ(FrappeTestCase):
 				                     "description": "Z", "unit": "Nos",
 				                     "quantity": 1, "rate": 1}]),
 			)
+
+
+from dantata_town.dantata_town.sub_contractor import (
+	make_purchase_invoice,
+)
+
+
+def _ensure_subcon_cost_item():
+	if frappe.db.exists("Item", "Sub Contractor Cost"):
+		return
+	item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") \
+		or frappe.db.get_value("Item Group", {}, "name")
+	stock_uom = frappe.db.get_value("UOM", {"name": "Nos"}, "name") \
+		or frappe.db.get_value("UOM", {}, "name")
+	frappe.get_doc({
+		"doctype": "Item",
+		"item_code": "Sub Contractor Cost",
+		"item_name": "Sub Contractor Cost",
+		"item_group": item_group,
+		"stock_uom": stock_uom,
+		"is_stock_item": 0,
+	}).insert(ignore_permissions=True)
+
+
+def _set_site_expense_account(site):
+	company = frappe.db.get_single_value("Global Defaults", "default_company") \
+		or frappe.db.get_value("Company", {}, "name")
+	expense = frappe.db.get_value(
+		"Account",
+		{"company": company, "account_type": "Expense Account", "is_group": 0},
+		"name",
+	) or frappe.db.get_value(
+		"Account", {"company": company, "is_group": 0, "root_type": "Expense"}, "name"
+	)
+	frappe.db.set_value("Site", site, "expense_account", expense)
+	return expense
+
+
+def _make_approved_request(site, project, supplier):
+	"""Build, submit, and return the name of a request.
+
+	On dev sites without a Workflow installed, `workflow_state` is None on the
+	submitted doc; the server-side `make_purchase_invoice` gate
+	`if req.workflow_state and req.workflow_state != "Approved"` correctly
+	treats None as "not blocked", so the PI gets created. Tests don't need to
+	stage a workflow.
+	"""
+	import json
+	boq = _make_submitted_boq(site, project, sub_count=1, company_count=0)
+	sub_row = frappe.get_doc("Bill of Quantities", boq).table_txao[0]
+	req_name = make_request_from_boq(
+		boq=boq, supplier=supplier, date=today(),
+		selected=json.dumps([{
+			"stage_label": "Stage 1",
+			"boq_item_name": sub_row.name,
+			"description": sub_row.description,
+			"unit": sub_row.unit,
+			"quantity": sub_row.planned_quantity,
+			"rate": sub_row.rate,
+		}]),
+	)
+	req = frappe.get_doc("Sub Contractor Payment Request", req_name)
+	req.submit()
+	return req.name
+
+
+class TestMakePurchaseInvoice(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+		_ensure_subcon_cost_item()
+		self.supplier = frappe.db.get_value("Supplier", {"disabled": 0}, "name")
+
+	def test_creates_draft_pi_with_correct_fields(self):
+		site, project = _make_site_and_project_for_flow()
+		_set_site_expense_account(site)
+		req_name = _make_approved_request(site, project, self.supplier)
+		pi_name = make_purchase_invoice(req_name)
+		pi = frappe.get_doc("Purchase Invoice", pi_name)
+		self.assertEqual(pi.docstatus, 0)
+		self.assertEqual(pi.supplier, self.supplier)
+		self.assertEqual(pi.site, site)
+		self.assertEqual(pi.sub_contractor_payment_request, req_name)
+		self.assertEqual(len(pi.items), 1)
+		row = pi.items[0]
+		self.assertEqual(row.item_code, "Sub Contractor Cost")
+		self.assertEqual(flt(row.qty), 1)
+		self.assertEqual(flt(row.rate), 5000)  # 5 × 1000 from the source BOQ row
+		self.assertEqual(row.project, project)
+
+	def test_missing_expense_account_errors(self):
+		site, project = _make_site_and_project_for_flow()
+		# Deliberately do NOT set expense_account on the Site
+		req_name = _make_approved_request(site, project, self.supplier)
+		with self.assertRaises(frappe.ValidationError):
+			make_purchase_invoice(req_name)
+
+	def test_missing_subcon_cost_item_errors(self):
+		# Delete the Item; FrappeTestCase's transactional rollback restores it
+		# at the end of the test. If the delete itself fails on this dev site
+		# (e.g., ledger entries reference the item from a prior unrelated
+		# session), skipTest with the reason — this is environment, not logic.
+		site, project = _make_site_and_project_for_flow()
+		_set_site_expense_account(site)
+		req_name = _make_approved_request(site, project, self.supplier)
+		try:
+			frappe.delete_doc("Item", "Sub Contractor Cost",
+			                  ignore_permissions=True, force=True)
+		except Exception as e:
+			self.skipTest(f"Cannot delete Sub Contractor Cost item on this site: {e}")
+		with self.assertRaises(frappe.ValidationError):
+			make_purchase_invoice(req_name)
+
+	def test_draft_request_errors(self):
+		import json
+		site, project = _make_site_and_project_for_flow()
+		_set_site_expense_account(site)
+		boq = _make_submitted_boq(site, project, sub_count=1, company_count=0)
+		sub_row = frappe.get_doc("Bill of Quantities", boq).table_txao[0]
+		req_name = make_request_from_boq(
+			boq=boq, supplier=self.supplier, date=today(),
+			selected=json.dumps([{
+				"stage_label": "Stage 1",
+				"boq_item_name": sub_row.name,
+				"description": sub_row.description,
+				"unit": sub_row.unit,
+				"quantity": sub_row.planned_quantity,
+				"rate": sub_row.rate,
+			}]),
+		)
+		# Do NOT submit; leave as draft (docstatus = 0).
+		with self.assertRaises(frappe.ValidationError):
+			make_purchase_invoice(req_name)
+
+	def test_pi_submit_increases_project_expenses(self):
+		"""Regression: the Spec 1 hooks pick up the generated PI's contribution."""
+		site, project = _make_site_and_project_for_flow()
+		_set_site_expense_account(site)
+		req_name = _make_approved_request(site, project, self.supplier)
+		pi_name = make_purchase_invoice(req_name)
+		pi = frappe.get_doc("Purchase Invoice", pi_name)
+		# Fill anything else PI submit needs (cost_center / company already set
+		# by set_missing_values).
+		company = pi.company
+		if not pi.due_date:
+			pi.due_date = add_days(today(), 30)
+		if not pi.bill_no:
+			pi.bill_no = frappe.generate_hash(length=6)
+			pi.bill_date = today()
+		pi.items[0].cost_center = frappe.db.get_value(
+			"Cost Center", {"company": company, "is_group": 0}, "name"
+		)
+		pi.save(ignore_permissions=True)
+		pi.submit()
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project, "project_expenses")),
+			5000,
+		)
