@@ -248,6 +248,31 @@ def _create_custom_fields():
 	custom_fields.setdefault("Bill of Quantities", []).extend(boq_stage_fields)
 
 	create_custom_fields(custom_fields, update=True)
+	_force_allow_on_submit_flags()
+
+
+def _force_allow_on_submit_flags():
+	"""Frappe v15's create_custom_fields(update=True) sometimes silently skips
+	flag updates on existing Custom Fields. Force allow_on_submit=1 directly via
+	db_set on every field that needs it, so a migrate after this function runs
+	is guaranteed to land the flag (especially on sites where the field was
+	originally created with allow_on_submit=0).
+	"""
+	enforce = []
+	enforce.append(("BOQ Items", "completed"))
+	enforce.append(("BOQ Items", "assignment_type"))
+	for stage in range(1, 8):
+		for suffix in ("start_date", "end_date", "duration", "progress", "status"):
+			enforce.append(("Bill of Quantities", f"stage_{stage}_{suffix}"))
+
+	for dt, fieldname in enforce:
+		cf = frappe.db.get_value(
+			"Custom Field", {"dt": dt, "fieldname": fieldname}, "name"
+		)
+		if cf:
+			frappe.db.set_value(
+				"Custom Field", cf, "allow_on_submit", 1, update_modified=False
+			)
 
 
 def _create_property_setters():
