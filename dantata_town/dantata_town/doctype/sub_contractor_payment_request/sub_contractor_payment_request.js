@@ -46,14 +46,9 @@ function recalc_amount(frm, cdt, cdn) {
 
 function set_pi_button(frm) {
 	if (frm.doc.docstatus !== 1) return;
+	// Match the server gate exactly: when workflow_state is set, require Approved.
+	// When unset (no workflow installed), allow — the server is the source of truth.
 	if (frm.doc.workflow_state && frm.doc.workflow_state !== "Approved") return;
-	if (!frm.doc.workflow_state) {
-		// No workflow installed → still allow PI creation only when explicitly Approved
-		// is set, or fall back to docstatus=1. For production sites, the workflow
-		// will populate workflow_state. For dev/test sites without a workflow, the
-		// button is hidden by default to avoid bypassing the gate accidentally.
-		return;
-	}
 	frm.add_custom_button(__("Create Purchase Invoice"), () => create_pi(frm));
 }
 
