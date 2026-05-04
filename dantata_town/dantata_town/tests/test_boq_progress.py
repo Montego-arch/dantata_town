@@ -30,12 +30,15 @@ class TestBOQStageFieldsInstalled(FrappeTestCase):
 	def test_per_stage_fields_exist(self):
 		create_boq_custom_fields()
 		for stage in range(1, 8):
+			# All 5 are allow_on_submit=1: dates so the user can edit them
+			# post-submit; duration/progress/status so server-computed updates
+			# can persist on the auto-save fired by toggling line-item completed.
 			for suffix, fieldtype, expect_allow_on_submit in [
 				("start_date", "Date", 1),
 				("end_date", "Date", 1),
-				("duration", "Int", 0),
-				("progress", "Percent", 0),
-				("status", "Data", 0),
+				("duration", "Int", 1),
+				("progress", "Percent", 1),
+				("status", "Data", 1),
 			]:
 				fieldname = f"stage_{stage}_{suffix}"
 				field = frappe.db.get_value(
