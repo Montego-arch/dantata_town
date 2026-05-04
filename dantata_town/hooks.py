@@ -49,6 +49,7 @@ doctype_js = {
 	"Allocation Letter": "public/js/allocation_letter.js",
 	"Quotation": "public/js/quotation.js",
 	"Customer Payment Report Settings": "public/js/customer_payment_report_settings.js",
+	"Bill of Quantities": "public/js/bill_of_quantities.js",
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -177,6 +178,12 @@ doc_events = {
 	"Payment Entry": {
 		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
 		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+	},
+	"Bill of Quantities": {
+		"validate": [
+			"dantata_town.dantata_town.boq_progress.validate_stage_dates",
+			"dantata_town.dantata_town.boq_progress.recalc_boq_progress",
+		],
 	},
 }
 
