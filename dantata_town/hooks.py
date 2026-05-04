@@ -162,6 +162,22 @@ doc_events = {
 		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty_from_stock_entry",
 		"on_cancel": "dantata_town.dantata_town.utils.reverse_boq_consumed_qty_from_stock_entry",
 	},
+	"Purchase Invoice": {
+		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+	},
+	"Expense Claim": {
+		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+	},
+	"Journal Entry": {
+		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+	},
+	"Payment Entry": {
+		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+	},
 }
 
 # Scheduled Tasks
