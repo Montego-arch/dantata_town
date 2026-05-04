@@ -11,8 +11,9 @@ PROJECT_TYPE_SEED = {
 
 
 def create_boq_custom_fields():
-	"""Create custom fields on ERPNext doctypes for BOQ, Site, Project, and
-	Quotation customizations, and seed Dantata Town project classification data."""
+	"""Register custom fields on Material Request, Project, Quotation, BOQ
+	Items, and Purchase Invoice; seed Dantata Town project types and subtypes.
+	(Site customizations live in site.json.)"""
 	_create_custom_fields()
 	_create_property_setters()
 	_cleanup_broken_project_links()
