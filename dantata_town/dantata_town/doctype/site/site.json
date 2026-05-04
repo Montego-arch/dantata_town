@@ -10,6 +10,7 @@
   "column_break_lflt",
   "expected_start_date",
   "expected_end_date",
+  "expense_account",
   "section_break_diyy",
   "project_units",
   "total_units",
@@ -36,6 +37,12 @@
    "fieldname": "expected_end_date",
    "fieldtype": "Date",
    "label": "Expected End Date"
+  },
+  {
+   "fieldname": "expense_account",
+   "fieldtype": "Link",
+   "label": "Expense Account",
+   "options": "Account"
   },
   {
    "fieldname": "section_break_diyy",
