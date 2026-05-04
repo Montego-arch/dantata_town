@@ -6,8 +6,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "unit_type",
-  "projected_quantity",
+  "building_type",
+  "unit",
   "column_break_lomr",
   "uom",
   "rate",
@@ -16,18 +16,18 @@
  "fields": [
   {
    "columns": 3,
-   "fieldname": "unit_type",
+   "fieldname": "building_type",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Unit Type",
+   "label": "Building Type",
    "options": "Item"
   },
   {
    "columns": 2,
-   "fieldname": "projected_quantity",
+   "fieldname": "unit",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Projected Quantity"
+   "label": "Unit"
   },
   {
    "fieldname": "column_break_lomr",
