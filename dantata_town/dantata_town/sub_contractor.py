@@ -102,21 +102,31 @@ def make_purchase_invoice(request_name: str) -> str:
 			"(currently {0})"
 		).format(workflow_state))
 
+	# Resolve the company from the Project early so the PI's company dimension
+	# validation (which checks Project.company == PI.company) passes.
+	company = frappe.db.get_value("Project", req.project, "company")
+	if not company:
+		frappe.throw(_(
+			"Project '{0}' has no Company set; cannot create a Purchase Invoice"
+		).format(req.project))
+
 	expense_account = frappe.db.get_value("Site", req.site, "expense_account")
 	if not expense_account:
 		frappe.throw(_(
 			"Set Expense Account on Site '{0}' before creating a Purchase Invoice"
 		).format(req.site))
 
+	account_company = frappe.db.get_value("Account", expense_account, "company")
+	if account_company != company:
+		frappe.throw(_(
+			"Expense Account '{0}' belongs to company {1}, but Project '{2}' is on "
+			"company {3}. Update Site.expense_account to match the project's company."
+		).format(expense_account, account_company, req.project, company))
+
 	if not frappe.db.exists("Item", "Sub Contractor Cost"):
 		frappe.throw(_(
 			"Create an Item named 'Sub Contractor Cost' before using this feature"
 		))
-
-	# Resolve the company from the Project so the PI's company dimension
-	# validation (which checks Project.company == PI.company) passes.
-	company = frappe.db.get_value("Project", req.project, "company") \
-		if req.project else None
 
 	pi = frappe.new_doc("Purchase Invoice")
 	pi.supplier = req.supplier
@@ -124,8 +134,7 @@ def make_purchase_invoice(request_name: str) -> str:
 	pi.due_date = add_days(today(), 30)
 	pi.site = req.site
 	pi.sub_contractor_payment_request = req.name
-	if company:
-		pi.company = company
+	pi.company = company
 	pi.append("items", {
 		"item_code": "Sub Contractor Cost",
 		"qty": 1,
