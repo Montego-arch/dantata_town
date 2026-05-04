@@ -60,3 +60,155 @@ frappe.ui.form.on("BOQ Items", {
 		}
 	},
 });
+
+// ---------------------------------------------------------------------------
+// Sub Contractor Payment Request — modal picker on submitted BOQs.
+// ---------------------------------------------------------------------------
+
+frappe.ui.form.on("Bill of Quantities", {
+	refresh(frm) {
+		if (!frm.is_new() && frm.doc.docstatus === 1) {
+			frm.add_custom_button(__("Create Sub Contractor Payment Request"), () => {
+				open_sub_contractor_modal(frm);
+			});
+		}
+	},
+});
+
+function open_sub_contractor_modal(frm) {
+	const sub_rows = collect_sub_contractor_rows(frm);
+	if (sub_rows.length === 0) {
+		frappe.msgprint(__("No sub-contractor lines on this BOQ."));
+		return;
+	}
+
+	const dialog = new frappe.ui.Dialog({
+		title: __("Create Sub Contractor Payment Request"),
+		fields: [
+			{
+				fieldtype: "Link",
+				fieldname: "supplier",
+				label: __("Supplier"),
+				options: "Supplier",
+				reqd: 1,
+			},
+			{
+				fieldtype: "Date",
+				fieldname: "date",
+				label: __("Date"),
+				default: frappe.datetime.get_today(),
+				reqd: 1,
+			},
+			{ fieldtype: "Section Break", label: __("Items") },
+			{ fieldtype: "HTML", fieldname: "items_html" },
+		],
+		primary_action_label: __("Create"),
+		primary_action: (values) => {
+			const selected = collect_checked_rows(dialog, sub_rows);
+			if (selected.length === 0) {
+				frappe.msgprint(__("Select at least one item."));
+				return;
+			}
+			frappe.call({
+				method: "dantata_town.dantata_town.sub_contractor.make_request_from_boq",
+				args: {
+					boq: frm.doc.name,
+					supplier: values.supplier,
+					date: values.date,
+					selected: JSON.stringify(selected),
+				},
+				freeze: true,
+				freeze_message: __("Creating request..."),
+				callback: (r) => {
+					if (r.message) {
+						dialog.hide();
+						frappe.set_route("Form", "Sub Contractor Payment Request", r.message);
+					}
+				},
+			});
+		},
+	});
+	dialog.fields_dict.items_html.$wrapper.html(render_picker_grid(sub_rows));
+	dialog.show();
+}
+
+function collect_sub_contractor_rows(frm) {
+	const STAGE_TABLES = {
+		1: "table_txao",
+		2: "description2",
+		3: "description3",
+		4: "description4",
+		5: "description5",
+		6: "description6",
+		7: "description7",
+	};
+	const out = [];
+	for (const [stage_no, fieldname] of Object.entries(STAGE_TABLES)) {
+		const stage_title = frm.doc[`stage_${stage_no}`] || "";
+		const stage_label = stage_title
+			? `Stage ${stage_no} — ${stage_title}`
+			: `Stage ${stage_no}`;
+		for (const row of frm.doc[fieldname] || []) {
+			if (row.assignment_type === "Sub Contractor") {
+				out.push({
+					stage_label,
+					boq_item_name: row.name,
+					description: row.description,
+					unit: row.unit || "",
+					quantity: row.planned_quantity,
+					rate: row.rate,
+					amount: row.amount,
+				});
+			}
+		}
+	}
+	return out;
+}
+
+function render_picker_grid(rows) {
+	const fmt_money = (v) => format_currency(v);
+	const lines = rows
+		.map(
+			(r, i) => `
+			<tr>
+				<td><input type="checkbox" data-idx="${i}" checked></td>
+				<td>${frappe.utils.escape_html(r.stage_label)}</td>
+				<td>${frappe.utils.escape_html(r.description)}</td>
+				<td>${frappe.utils.escape_html(r.unit)}</td>
+				<td class="text-right">${r.quantity}</td>
+				<td class="text-right">${fmt_money(r.rate)}</td>
+				<td class="text-right">${fmt_money(r.amount)}</td>
+			</tr>`
+		)
+		.join("");
+	return `
+		<div class="table-responsive">
+			<table class="table table-bordered scpr-picker">
+				<thead>
+					<tr>
+						<th></th>
+						<th>${__("Stage")}</th>
+						<th>${__("Description")}</th>
+						<th>${__("Unit")}</th>
+						<th class="text-right">${__("Qty")}</th>
+						<th class="text-right">${__("Rate")}</th>
+						<th class="text-right">${__("Amount")}</th>
+					</tr>
+				</thead>
+				<tbody>${lines}</tbody>
+			</table>
+		</div>
+	`;
+}
+
+function collect_checked_rows(dialog, all_rows) {
+	const checks = dialog.$wrapper.find(".scpr-picker input[type=checkbox]");
+	const selected = [];
+	checks.each(function () {
+		if (this.checked) {
+			const idx = parseInt($(this).data("idx"), 10);
+			selected.push(all_rows[idx]);
+		}
+	});
+	return selected;
+}
