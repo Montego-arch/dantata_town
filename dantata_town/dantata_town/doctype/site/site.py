@@ -12,6 +12,6 @@ class Site(Document):
 	def calculate_totals(self):
 		total = 0
 		for row in self.get("project_units") or []:
-			row.amount = flt(row.projected_quantity) * flt(row.rate)
-			total += flt(row.projected_quantity)
+			row.amount = flt(row.unit) * flt(row.rate)
+			total += flt(row.unit)
 		self.total_units = total

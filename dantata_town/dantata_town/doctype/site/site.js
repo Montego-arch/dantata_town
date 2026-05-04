@@ -3,7 +3,7 @@
 
 frappe.ui.form.on("Site", {
 	refresh(frm) {
-		frm.set_query("unit_type", "project_units", () => {
+		frm.set_query("building_type", "project_units", () => {
 			return {
 				filters: { item_group: "PROPERTIES" },
 			};
@@ -12,7 +12,7 @@ frappe.ui.form.on("Site", {
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Create Project"), () => {
 				let items = (frm.doc.project_units || [])
-					.map((row) => row.unit_type)
+					.map((row) => row.building_type)
 					.filter(Boolean);
 
 				if (!items.length) {
@@ -34,10 +34,10 @@ frappe.ui.form.on("Site", {
 });
 
 frappe.ui.form.on("Project Unit Item", {
-	unit_type(frm, cdt, cdn) {
+	building_type(frm, cdt, cdn) {
 		let row = locals[cdt][cdn];
-		if (row.unit_type) {
-			frappe.db.get_value("Item", row.unit_type, "stock_uom", (r) => {
+		if (row.building_type) {
+			frappe.db.get_value("Item", row.building_type, "stock_uom", (r) => {
 				if (r) {
 					frappe.model.set_value(cdt, cdn, "uom", r.stock_uom);
 				}
