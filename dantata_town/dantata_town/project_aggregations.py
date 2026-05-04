@@ -140,31 +140,41 @@ def _sum_journal_credits_to_receivable(project: str) -> float:
 def _sum_payment_entry_references(project: str) -> float:
 	"""Sum allocated amounts from Payment Entries that touch this project.
 
-	A Payment Entry touches `project` if either:
-	- The PE itself has `project = X`, or
-	- A reference row points to a Sales/Purchase Invoice whose project is X.
-
-	Receive payments (party_type=Customer) count as money-in.
+	A Receive Payment Entry contributes when:
+	- The PE has a direct `project` link to this project, OR
+	- A reference row points to a Sales Invoice whose project is this project.
 	"""
-	rows = frappe.db.sql(
+	via_direct = frappe.db.sql(
 		"""
 		select sum(per.allocated_amount) as total
 		from `tabPayment Entry Reference` per
 		join `tabPayment Entry` pe on pe.name = per.parent
 		where pe.docstatus = 1
 		  and pe.payment_type = 'Receive'
-		  and (
-		    per.reference_doctype = 'Sales Invoice'
-		    and exists (
-		      select 1 from `tabSales Invoice` si
-		      where si.name = per.reference_name and si.project = %(project)s
-		    )
-		  )
+		  and pe.project = %s
 		""",
-		{"project": project},
+		(project,),
 		as_dict=True,
 	)
-	return flt(rows[0].total) if rows else 0
+	via_si = frappe.db.sql(
+		"""
+		select sum(per.allocated_amount) as total
+		from `tabPayment Entry Reference` per
+		join `tabPayment Entry` pe on pe.name = per.parent
+		where pe.docstatus = 1
+		  and pe.payment_type = 'Receive'
+		  and per.reference_doctype = 'Sales Invoice'
+		  and exists (
+		    select 1 from `tabSales Invoice` si
+		    where si.name = per.reference_name and si.project = %s
+		  )
+		""",
+		(project,),
+		as_dict=True,
+	)
+	direct = flt(via_direct[0].total) if via_direct else 0
+	via = flt(via_si[0].total) if via_si else 0
+	return direct + via
 
 
 @frappe.whitelist()
