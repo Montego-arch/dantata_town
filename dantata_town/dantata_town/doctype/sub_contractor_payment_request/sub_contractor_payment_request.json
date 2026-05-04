@@ -44,6 +44,7 @@
    "search_index": 1
   },
   {
+   "default": "Today",
    "fieldname": "date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -75,6 +76,7 @@
    "fieldname": "boq",
    "fieldtype": "Link",
    "label": "Bill of Quantities",
+   "link_filters": "[[\"Bill of Quantities\",\"docstatus\",\"=\",1]]",
    "options": "Bill of Quantities",
    "read_only": 1,
    "reqd": 1
