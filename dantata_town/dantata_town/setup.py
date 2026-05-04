@@ -164,7 +164,53 @@ def _create_custom_fields():
 				"module": "Dantata Town",
 			},
 		],
+		"BOQ Items": [
+			{
+				"fieldname": "completed",
+				"fieldtype": "Check",
+				"label": "Completed",
+				"insert_after": "actual_amount",
+				"allow_on_submit": 1,
+				"in_list_view": 1,
+				"module": "Dantata Town",
+			},
+		],
 	}
+
+	# Per-stage tracking fields on Bill of Quantities (× 7 stages)
+	stage_summary_fieldnames = {
+		1: "stage_1_summary",
+		2: "stage_2_summary",
+		3: "stage_3_summary",
+		4: "stage_4_summary",
+		5: "stage_5_summary",
+		6: "stage_6_summary",
+		7: "stage_7_summary",
+	}
+	boq_stage_fields = []
+	for stage_no, summary_fieldname in stage_summary_fieldnames.items():
+		previous = summary_fieldname
+		for suffix, ftype, extra in [
+			("start_date", "Date", {"allow_on_submit": 1}),
+			("end_date", "Date", {"allow_on_submit": 1}),
+			("duration", "Int", {"read_only": 1, "label_extra": " (days)"}),
+			("progress", "Percent", {"read_only": 1}),
+			("status", "Data", {"read_only": 1}),
+		]:
+			fieldname = f"stage_{stage_no}_{suffix}"
+			label_extra = extra.pop("label_extra", "")
+			label = f"Stage {stage_no} {suffix.replace('_', ' ').title()}{label_extra}"
+			boq_stage_fields.append({
+				"fieldname": fieldname,
+				"fieldtype": ftype,
+				"label": label,
+				"insert_after": previous,
+				"module": "Dantata Town",
+				**extra,
+			})
+			previous = fieldname
+	custom_fields.setdefault("Bill of Quantities", []).extend(boq_stage_fields)
+
 	create_custom_fields(custom_fields, update=True)
 
 
