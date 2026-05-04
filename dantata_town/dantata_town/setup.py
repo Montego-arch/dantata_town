@@ -61,7 +61,6 @@ def _create_custom_fields():
 				"label": "Site",
 				"options": "Site",
 				"insert_after": "project_name",
-				"read_only": 1,
 				"reqd": 1,
 				"module": "Dantata Town",
 			},
@@ -257,6 +256,11 @@ def _force_allow_on_submit_flags():
 	db_set on every field that needs it, so a migrate after this function runs
 	is guaranteed to land the flag (especially on sites where the field was
 	originally created with allow_on_submit=0).
+
+	Also force read_only=0 on Project.site so the quick entry can show it
+	(read-only fields are excluded from the quick entry dialog regardless of
+	allow_in_quick_entry). The same skip-on-update behavior in v15 means an
+	already-existing read_only=1 row will not be cleared without this nudge.
 	"""
 	enforce = []
 	enforce.append(("BOQ Items", "completed"))
@@ -274,6 +278,14 @@ def _force_allow_on_submit_flags():
 				"Custom Field", cf, "allow_on_submit", 1, update_modified=False
 			)
 
+	site_cf = frappe.db.get_value(
+		"Custom Field", {"dt": "Project", "fieldname": "site"}, "name"
+	)
+	if site_cf:
+		frappe.db.set_value(
+			"Custom Field", site_cf, "read_only", 0, update_modified=False
+		)
+
 
 def _create_property_setters():
 	"""Set customer as mandatory and allow in quick entry on Project, and
@@ -282,6 +294,8 @@ def _create_property_setters():
 	property_setters = [
 		("Project", "customer", "reqd", "1", "Check"),
 		("Project", "customer", "allow_in_quick_entry", "1", "Check"),
+		("Project", "site", "allow_in_quick_entry", "1", "Check"),
+		("Project", "building_type", "allow_in_quick_entry", "1", "Check"),
 		("Project", "project_type", "reqd", "1", "Check"),
 		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
 		("Project", "total_sales_amount", "hidden", "0", "Check"),

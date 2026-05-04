@@ -66,6 +66,7 @@ from dantata_town.dantata_town.sub_contractor import (
 
 def _make_site_and_project_for_flow():
 	create_boq_custom_fields()
+	from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 	uom = frappe.db.get_value("UOM", {}, "name")
 	item = frappe.db.get_value("Item", {"disabled": 0}, "name")
 	customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
@@ -74,6 +75,7 @@ def _make_site_and_project_for_flow():
 	site = frappe.get_doc({
 		"doctype": "Site",
 		"site_name": f"Flow-Site-{frappe.generate_hash(length=6)}",
+		"expense_account": get_test_expense_account(),
 		"project_units": [{"building_type": item, "unit": 1, "uom": uom, "rate": 1}],
 	}).insert(ignore_permissions=True)
 	project = frappe.get_doc({
@@ -308,7 +310,10 @@ class TestMakePurchaseInvoice(FrappeTestCase):
 
 	def test_missing_expense_account_errors(self):
 		site, project = _make_site_and_project_for_flow()
-		# Deliberately do NOT set expense_account on the Site
+		# Site.expense_account is now mandatory at the model level. Bypass
+		# validation to clear it so the PI creation safeguard (defense in depth
+		# against legacy rows or direct DB edits) still gets exercised.
+		frappe.db.set_value("Site", site, "expense_account", None)
 		req_name = _make_approved_request(site, project, self.supplier)
 		with self.assertRaises(frappe.ValidationError):
 			make_purchase_invoice(req_name)

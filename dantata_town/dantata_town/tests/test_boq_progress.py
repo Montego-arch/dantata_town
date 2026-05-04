@@ -57,11 +57,13 @@ class TestBOQStageFieldsInstalled(FrappeTestCase):
 
 def _make_site():
 	create_boq_custom_fields()
+	from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 	uom = frappe.db.get_value("UOM", {}, "name")
 	item = frappe.db.get_value("Item", {"disabled": 0}, "name")
 	site = frappe.get_doc({
 		"doctype": "Site",
 		"site_name": f"BOQSite-{frappe.generate_hash(length=6)}",
+		"expense_account": get_test_expense_account(),
 		"project_units": [{"building_type": item, "unit": 1, "uom": uom, "rate": 1}],
 	}).insert(ignore_permissions=True)
 	return site.name

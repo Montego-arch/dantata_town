@@ -19,10 +19,12 @@ class TestRenameProjectUnitItemFields(FrappeTestCase):
 
 	def test_patch_preserves_data(self):
 		"""If a row exists with new fieldnames, patch is a no-op and data survives."""
+		from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 		site_name = frappe.generate_hash(length=8)
 		site = frappe.get_doc({
 			"doctype": "Site",
 			"site_name": f"Test-{site_name}",
+			"expense_account": get_test_expense_account(),
 			"project_units": [{
 				"building_type": frappe.db.get_value("Item", {"disabled": 0}, "name"),
 				"unit": 7,

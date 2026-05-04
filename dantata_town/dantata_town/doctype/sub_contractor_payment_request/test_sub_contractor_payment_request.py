@@ -11,6 +11,7 @@ from dantata_town.dantata_town.setup import create_boq_custom_fields
 def _make_site_and_project_minimal():
 	"""Build a minimal Site + Project pair for tests in this module."""
 	create_boq_custom_fields()
+	from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 	uom = frappe.db.get_value("UOM", {}, "name")
 	item = frappe.db.get_value("Item", {"disabled": 0}, "name")
 	customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
@@ -19,6 +20,7 @@ def _make_site_and_project_minimal():
 	site = frappe.get_doc({
 		"doctype": "Site",
 		"site_name": f"SCPR-Site-{frappe.generate_hash(length=6)}",
+		"expense_account": get_test_expense_account(),
 		"project_units": [{"building_type": item, "unit": 1, "uom": uom, "rate": 1}],
 	}).insert(ignore_permissions=True)
 	project = frappe.get_doc({

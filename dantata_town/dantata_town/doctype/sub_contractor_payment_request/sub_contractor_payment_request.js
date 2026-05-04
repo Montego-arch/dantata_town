@@ -6,22 +6,12 @@ frappe.ui.form.on("Sub Contractor Payment Request", {
 		set_pi_button(frm);
 	},
 
+	before_save(frm) {
+		return confirm_diffs(frm.doc);
+	},
+
 	before_submit(frm) {
-		const diffs = collect_row_diffs(frm.doc);
-		if (diffs.length === 0) return;
-		return new Promise((resolve, reject) => {
-			const dialog = new frappe.ui.Dialog({
-				title: __("Confirm changes before submitting"),
-				fields: [{ fieldtype: "HTML", fieldname: "diff_html" }],
-				primary_action_label: __("Proceed"),
-				primary_action: () => { dialog.hide(); resolve(); },
-				secondary_action_label: __("Cancel"),
-				secondary_action: () => { dialog.hide(); reject(); },
-			});
-			dialog.fields_dict.diff_html.$wrapper.html(render_diff_html(diffs));
-			dialog.on_hide = () => reject();
-			dialog.show();
-		});
+		return confirm_diffs(frm.doc);
 	},
 });
 
@@ -63,6 +53,36 @@ function create_pi(frm) {
 				frappe.set_route("Form", "Purchase Invoice", r.message);
 			}
 		},
+	});
+}
+
+function confirm_diffs(doc) {
+	const diffs = collect_row_diffs(doc);
+	if (diffs.length === 0) return;
+	return new Promise((resolve, reject) => {
+		// `settled` guards against the on_hide handler rejecting after the user
+		// already chose Proceed/Cancel — settling a promise twice was leaving
+		// the form's freeze indicator stuck.
+		let settled = false;
+		const dialog = new frappe.ui.Dialog({
+			title: __("Confirm changes"),
+			fields: [{ fieldtype: "HTML", fieldname: "diff_html" }],
+			primary_action_label: __("Proceed"),
+			primary_action: () => {
+				settled = true;
+				dialog.hide();
+				resolve();
+			},
+			secondary_action_label: __("Cancel"),
+			secondary_action: () => {
+				settled = true;
+				dialog.hide();
+				reject();
+			},
+		});
+		dialog.fields_dict.diff_html.$wrapper.html(render_diff_html(diffs));
+		dialog.on_hide = () => { if (!settled) reject(); };
+		dialog.show();
 	});
 }
 

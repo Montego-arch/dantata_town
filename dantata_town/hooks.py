@@ -26,7 +26,9 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/dantata_town/css/dantata_town.css"
-# app_include_js = "/assets/dantata_town/js/dantata_town.js"
+# project_quick_entry.js must load globally (not just on the Project form view)
+# because quick-entry can be triggered from list views, link dialogs, etc.
+app_include_js = ["/assets/dantata_town/js/project_quick_entry.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/dantata_town/css/dantata_town.css"

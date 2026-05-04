@@ -66,6 +66,23 @@ class TestProjectTypeSetup(FrappeTestCase):
 		)
 		self.assertEqual(ps, "1")
 
+	def test_site_and_building_type_in_quick_entry(self):
+		create_boq_custom_fields()
+		for fieldname in ("site", "building_type"):
+			ps = frappe.db.get_value(
+				"Property Setter",
+				{
+					"doc_type": "Project",
+					"field_name": fieldname,
+					"property": "allow_in_quick_entry",
+				},
+				"value",
+			)
+			self.assertEqual(
+				ps, "1",
+				f"Project.{fieldname} should be allowed in quick entry",
+			)
+
 	def test_validator_rejects_mismatched_subtype(self):
 		create_boq_custom_fields()
 		from dantata_town.dantata_town.utils import validate_project_subtype_matches_type

@@ -42,7 +42,8 @@
    "fieldname": "expense_account",
    "fieldtype": "Link",
    "label": "Expense Account",
-   "options": "Account"
+   "options": "Account",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_diyy",
