@@ -133,15 +133,6 @@ function open_sub_contractor_modal(frm) {
 }
 
 function collect_sub_contractor_rows(frm) {
-	const STAGE_TABLES = {
-		1: "table_txao",
-		2: "description2",
-		3: "description3",
-		4: "description4",
-		5: "description5",
-		6: "description6",
-		7: "description7",
-	};
 	const out = [];
 	for (const [stage_no, fieldname] of Object.entries(STAGE_TABLES)) {
 		const stage_title = frm.doc[`stage_${stage_no}`] || "";
