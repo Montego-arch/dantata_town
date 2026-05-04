@@ -232,6 +232,7 @@ scheduler_events = {
 override_doctype_dashboards = {
 	"Project": "dantata_town.dantata_town.overrides.get_project_dashboard_data",
 	"Sales Order": "dantata_town.dantata_town.overrides.get_sales_order_dashboard_data",
+	"Bill of Quantities": "dantata_town.dantata_town.overrides.get_bill_of_quantities_dashboard_data",
 }
 
 # exempt linked doctypes from being automatically cancelled
