@@ -74,6 +74,44 @@ def _create_custom_fields():
 				"link_filters": '[["Project Subtype","project_type","=","eval:doc.project_type"]]',
 				"module": "Dantata Town",
 			},
+			{
+				"fieldname": "building_type",
+				"fieldtype": "Link",
+				"label": "Building Type",
+				"options": "Item",
+				"insert_after": "site",
+				"depends_on": "eval:doc.site",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "dt_financials_section",
+				"fieldtype": "Section Break",
+				"label": "Financials",
+				"insert_after": "project_subtype",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "project_expenses",
+				"fieldtype": "Currency",
+				"label": "Project Expenses",
+				"insert_after": "dt_financials_section",
+				"read_only": 1,
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "dt_financials_col",
+				"fieldtype": "Column Break",
+				"insert_after": "project_expenses",
+				"module": "Dantata Town",
+			},
+			{
+				"fieldname": "project_payment",
+				"fieldtype": "Currency",
+				"label": "Project Payment",
+				"insert_after": "dt_financials_col",
+				"read_only": 1,
+				"module": "Dantata Town",
+			},
 		],
 		"Quotation": [
 			{
@@ -139,6 +177,8 @@ def _create_property_setters():
 		("Project", "customer", "allow_in_quick_entry", "1", "Check"),
 		("Project", "project_type", "reqd", "1", "Check"),
 		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
+		("Project", "total_sales_amount", "hidden", "0", "Check"),
+		("Project", "total_sales_amount", "label", "Sales Order Amount", "Data"),
 	]
 	for doctype, fieldname, prop, value, prop_type in property_setters:
 		frappe.make_property_setter({
