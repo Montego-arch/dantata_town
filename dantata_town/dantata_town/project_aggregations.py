@@ -143,38 +143,31 @@ def _sum_payment_entry_references(project: str) -> float:
 	A Receive Payment Entry contributes when:
 	- The PE has a direct `project` link to this project, OR
 	- A reference row points to a Sales Invoice whose project is this project.
+
+	Each `Payment Entry Reference` row is counted at most once even if both conditions hold.
 	"""
-	via_direct = frappe.db.sql(
+	rows = frappe.db.sql(
 		"""
 		select sum(per.allocated_amount) as total
 		from `tabPayment Entry Reference` per
 		join `tabPayment Entry` pe on pe.name = per.parent
 		where pe.docstatus = 1
 		  and pe.payment_type = 'Receive'
-		  and pe.project = %s
-		""",
-		(project,),
-		as_dict=True,
-	)
-	via_si = frappe.db.sql(
-		"""
-		select sum(per.allocated_amount) as total
-		from `tabPayment Entry Reference` per
-		join `tabPayment Entry` pe on pe.name = per.parent
-		where pe.docstatus = 1
-		  and pe.payment_type = 'Receive'
-		  and per.reference_doctype = 'Sales Invoice'
-		  and exists (
-		    select 1 from `tabSales Invoice` si
-		    where si.name = per.reference_name and si.project = %s
+		  and (
+		    pe.project = %(project)s
+		    or (
+		      per.reference_doctype = 'Sales Invoice'
+		      and exists (
+		        select 1 from `tabSales Invoice` si
+		        where si.name = per.reference_name and si.project = %(project)s
+		      )
+		    )
 		  )
 		""",
-		(project,),
+		{"project": project},
 		as_dict=True,
 	)
-	direct = flt(via_direct[0].total) if via_direct else 0
-	via = flt(via_si[0].total) if via_si else 0
-	return direct + via
+	return flt(rows[0].total) if rows else 0
 
 
 @frappe.whitelist()
