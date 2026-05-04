@@ -77,26 +77,29 @@ def _detail_name():
 	}).insert(ignore_permissions=True).name
 
 
+def _make_project(site):
+	"""Create a fresh Project linked to the given site."""
+	return frappe.get_doc({
+		"doctype": "Project",
+		"project_name": f"P-{frappe.generate_hash(length=6)}",
+		"customer": frappe.db.get_value("Customer", {"disabled": 0}, "name"),
+		"site": site,
+		"project_type": "Building",
+		"project_subtype": "PLOT",
+	}).insert(ignore_permissions=True).name
+
+
 class TestRecalcBOQProgress(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
 
 	def _new_boq(self, stage_rows: dict[int, list[dict]]) -> "frappe.model.document.Document":
-		"""Build an in-memory BOQ doc with the given stage_no -> list-of-row-dicts."""
+		"""Build an in-memory BOQ doc with the given stage_no -> list-of-row-dicts.
+
+		Always creates a fresh Site + Project pair so tests stay isolated.
+		"""
 		site = _make_site()
-		project = frappe.db.get_value("Project", {}, "name")
-		# Tests only need the Project link; create one if missing.
-		if not project:
-			project = frappe.get_doc({
-				"doctype": "Project",
-				"project_name": f"P-{frappe.generate_hash(length=6)}",
-				"customer": frappe.db.get_value("Customer", {"disabled": 0}, "name"),
-				"site": site,
-				"project_type": "Building",
-				"project_subtype": "PLOT",
-			}).insert(ignore_permissions=True).name
-		else:
-			frappe.db.set_value("Project", project, "site", site)
+		project = _make_project(site)
 
 		doc = frappe.new_doc("Bill of Quantities")
 		doc.site = site
@@ -148,19 +151,19 @@ class TestValidateStageDates(FrappeTestCase):
 		create_boq_custom_fields()
 
 	def test_empty_stage_does_not_require_dates(self):
+		site = _make_site()
 		doc = frappe.new_doc("Bill of Quantities")
-		doc.site = _make_site()
-		doc.project = frappe.db.get_value("Project", {}, "name")
+		doc.site = site
+		doc.project = _make_project(site)
 		doc.date = today()
 		# No rows in any stage; should not raise.
 		validate_stage_dates(doc)
 
 	def test_stage_with_items_requires_both_dates(self):
 		site = _make_site()
-		project = frappe.db.get_value("Project", {}, "name")
 		doc = frappe.new_doc("Bill of Quantities")
 		doc.site = site
-		doc.project = project
+		doc.project = _make_project(site)
 		doc.date = today()
 		doc.append("table_txao", {
 			"description": _detail_name(),
@@ -172,10 +175,9 @@ class TestValidateStageDates(FrappeTestCase):
 
 	def test_end_before_start_raises(self):
 		site = _make_site()
-		project = frappe.db.get_value("Project", {}, "name")
 		doc = frappe.new_doc("Bill of Quantities")
 		doc.site = site
-		doc.project = project
+		doc.project = _make_project(site)
 		doc.date = today()
 		doc.append("table_txao", {
 			"description": _detail_name(),
