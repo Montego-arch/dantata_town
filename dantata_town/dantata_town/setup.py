@@ -292,7 +292,15 @@ def _force_allow_on_submit_flags():
 def _create_property_setters():
 	"""Set customer as mandatory and allow in quick entry on Project, and
 	hide the unused invoice_portion column on the Payment Schedule grid
-	(percentage is folded into the description for installment plans)."""
+	(percentage is folded into the description for installment plans).
+
+	Also removes the unique constraint on Project.project_name so that
+	multiple projects at different sites can share the same project_name.
+	The meta-level property setter is paired with an explicit DB index drop
+	because Frappe's migrate only re-syncs DocType schemas that it detects
+	as changed — it won't automatically drop the old unique index if the
+	core DocField record in tabDocField still carries unique=1.
+	"""
 	property_setters = [
 		("Project", "customer", "reqd", "1", "Check"),
 		("Project", "customer", "allow_in_quick_entry", "1", "Check"),
@@ -302,6 +310,7 @@ def _create_property_setters():
 		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
 		("Project", "total_sales_amount", "hidden", "0", "Check"),
 		("Project", "total_sales_amount", "label", "Sales Order Amount", "Data"),
+		("Project", "project_name", "unique", "0", "Check"),
 	]
 	for doctype, fieldname, prop, value, prop_type in property_setters:
 		frappe.make_property_setter({
@@ -311,6 +320,25 @@ def _create_property_setters():
 			"value": value,
 			"property_type": prop_type,
 		}, is_system_generated=False)
+
+	_drop_project_name_unique_index()
+
+
+def _drop_project_name_unique_index():
+	"""Explicitly drop the DB-level unique index on tabProject.project_name.
+
+	The Property Setter above sets unique=0 on the meta, but Frappe's
+	migrate won't drop the existing MySQL unique index unless it re-syncs
+	the table schema. We force the drop here so the constraint is removed
+	immediately on install/migrate, making the Property Setter and the DB
+	state consistent.
+	Idempotent: safe to call multiple times.
+	"""
+	unique_index = frappe.db.get_column_index("tabProject", "project_name", unique=True)
+	if unique_index:
+		# sql_ddl commits the current transaction then executes the DDL, which
+		# is required because ALTER TABLE causes an implicit commit in MariaDB.
+		frappe.db.sql_ddl(f"ALTER TABLE `tabProject` DROP INDEX `{unique_index.Key_name}`")
 
 
 def _cleanup_broken_project_links():
