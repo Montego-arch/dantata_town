@@ -58,6 +58,10 @@ class TestSOFifoAllocation(FrappeTestCase):
 			"Account",
 			{"company": self.company, "account_type": "Bank", "is_group": 0},
 			"name",
+		) or frappe.db.get_value(
+			"Account",
+			{"company": self.company, "account_type": "Cash", "is_group": 0},
+			"name",
 		)
 		self.cost_center = frappe.db.get_value(
 			"Cost Center", {"company": self.company, "is_group": 0}, "name"
@@ -89,23 +93,26 @@ class TestSOFifoAllocation(FrappeTestCase):
 		return so
 
 	def _make_payment_entry(self, so, amount):
-		pe = frappe.new_doc("Payment Entry")
-		pe.payment_type = "Receive"
-		pe.party_type = "Customer"
-		pe.party = self.customer
-		pe.company = self.company
-		pe.posting_date = today()
-		pe.paid_amount = amount
-		pe.received_amount = amount
-		pe.paid_from = self.receivable
-		pe.paid_to = self.bank
-		pe.append("references", {
-			"reference_doctype": "Sales Order",
-			"reference_name": so.name,
-			"allocated_amount": amount,
-			"total_amount": so.grand_total,
-			"outstanding_amount": so.grand_total - amount,
+		pe = frappe.get_doc({
+			"doctype": "Payment Entry",
+			"payment_type": "Receive",
+			"party_type": "Customer",
+			"party": self.customer,
+			"company": self.company,
+			"posting_date": today(),
+			"paid_amount": amount,
+			"received_amount": amount,
+			"paid_from": self.receivable,
+			"paid_to": self.bank,
+			"references": [{
+				"reference_doctype": "Sales Order",
+				"reference_name": so.name,
+				"allocated_amount": amount,
+				"total_amount": so.grand_total,
+				"outstanding_amount": so.grand_total - amount,
+			}],
 		})
+		pe.set_missing_values()
 		pe.insert(ignore_permissions=True)
 		pe.submit()
 		return pe

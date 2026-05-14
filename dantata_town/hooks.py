@@ -174,12 +174,24 @@ doc_events = {
 		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
 	},
 	"Journal Entry": {
-		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
-		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_submit": [
+			"dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+			"dantata_town.dantata_town.payment_allocation.recalc_for_je",
+		],
+		"on_cancel": [
+			"dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+			"dantata_town.dantata_town.payment_allocation.recalc_for_je",
+		],
 	},
 	"Payment Entry": {
-		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
-		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_submit": [
+			"dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+			"dantata_town.dantata_town.payment_allocation.recalc_for_pe",
+		],
+		"on_cancel": [
+			"dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+			"dantata_town.dantata_town.payment_allocation.recalc_for_pe",
+		],
 	},
 	"Bill of Quantities": {
 		"validate": [
