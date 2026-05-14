@@ -36,17 +36,24 @@ def allocate_so_payments(sales_order: str | None) -> None:
 
 
 def recalc_for_pe(doc, method=None) -> None:
-	"""Doc-event entrypoint for Payment Entry. Recompute touched SOs."""
+	"""Doc-event entrypoint for Payment Entry. Recompute touched SOs + ALs."""
 	touched_sos = set()
 	for ref in doc.get("references") or []:
 		if ref.reference_doctype == "Sales Order" and ref.reference_name:
 			touched_sos.add(ref.reference_name)
 	for so in touched_sos:
 		allocate_so_payments(so)
+		al = frappe.db.get_value(
+			"Allocation Letter",
+			{"sales_order": so, "docstatus": 1},
+			"name",
+		)
+		if al:
+			allocate_al_installments(al)
 
 
 def recalc_for_je(doc, method=None) -> None:
-	"""Doc-event entrypoint for Journal Entry. Recompute SOs of touched projects."""
+	"""Doc-event entrypoint for Journal Entry. Recompute SOs + ALs of touched projects."""
 	projects = {row.project for row in (doc.get("accounts") or []) if row.get("project")}
 	if not projects:
 		return
@@ -58,6 +65,13 @@ def recalc_for_je(doc, method=None) -> None:
 		)
 		for so in sos:
 			allocate_so_payments(so)
+			al = frappe.db.get_value(
+				"Allocation Letter",
+				{"sales_order": so, "docstatus": 1},
+				"name",
+			)
+			if al:
+				allocate_al_installments(al)
 
 
 def _sum_pe_to_so(sales_order: str) -> float:
@@ -92,3 +106,35 @@ def _sum_je_to_project_receivable(project: str) -> float:
 		(project,),
 	)
 	return flt(rows[0][0] if rows else 0)
+
+
+def allocate_al_installments(allocation_letter: str | None) -> None:
+	"""Mirror of allocate_so_payments but updates AL.installment_schedule rows.
+
+	The AL's installments use field `amount` (not `payment_amount`). Payments are
+	pulled from the AL's linked Sales Order: PEs referencing that SO plus JE credits
+	to a Receivable account tagged with the SO's project.
+	"""
+	if not allocation_letter or not frappe.db.exists("Allocation Letter", allocation_letter):
+		return
+	al = frappe.get_doc("Allocation Letter", allocation_letter)
+	rows = sorted(al.get("installment_schedule") or [], key=lambda r: (r.due_date, r.idx))
+	if not rows or not al.sales_order:
+		return
+
+	received = _sum_pe_to_so(al.sales_order)
+	so_project = frappe.db.get_value("Sales Order", al.sales_order, "project")
+	if so_project:
+		received += _sum_je_to_project_receivable(so_project)
+
+	remaining = flt(received)
+	for row in rows:
+		amount = flt(row.amount)
+		paid = min(remaining, amount)
+		outstanding = amount - paid
+		frappe.db.set_value(
+			"Allocation Letter Installment", row.name,
+			{"paid_amount": paid, "outstanding": outstanding},
+			update_modified=False,
+		)
+		remaining -= paid
