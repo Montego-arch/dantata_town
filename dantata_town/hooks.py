@@ -192,7 +192,10 @@ doc_events = {
 	},
 	"Sales Order": {
 		"before_validate": "dantata_town.dantata_town.sales_order.fetch_from_project",
-		"validate": "dantata_town.dantata_town.sales_order.enforce_one_so_per_project",
+		"validate": [
+			"dantata_town.dantata_town.sales_order.enforce_one_so_per_project",
+			"dantata_town.dantata_town.sales_order.check_reservations",
+		],
 	},
 }
 

@@ -3,6 +3,7 @@
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 
 def fetch_from_project(doc, method=None):
@@ -53,3 +54,49 @@ def existing_so_for_project(project: str, current_so: str | None = None) -> str 
 		(project, current_so or ""),
 	)
 	return row[0][0] if row else None
+
+
+def check_reservations(doc, method=None):
+	"""Block save when (sum of approved SO qty for this Item, excluding this SO,
+	plus this SO's qty) would exceed the (total - reserved) cap on its Site."""
+	# Aggregate qty per item_code on this SO (handles multiple lines for same item).
+	this_so_qty: dict[str, float] = {}
+	for row in doc.items:
+		this_so_qty[row.item_code] = this_so_qty.get(row.item_code, 0) + flt(row.qty)
+
+	for item_code, qty_on_this in this_so_qty.items():
+		site_row = frappe.db.sql(
+			"""
+			select parent as site, unit as total, reserved_unit as reserved
+			from `tabProject Unit Item`
+			where parenttype = 'Site' and building_type = %s
+			limit 1
+			""",
+			(item_code,),
+			as_dict=True,
+		)
+		if not site_row:
+			continue  # not a site-tracked item
+		site_row = site_row[0]
+		cap = flt(site_row.total) - flt(site_row.reserved)
+
+		# Sum of approved qty for this item across all other SOs (docstatus 1).
+		other = frappe.db.sql(
+			"""
+			select coalesce(sum(soi.qty), 0)
+			from `tabSales Order Item` soi
+			join `tabSales Order` so on so.name = soi.parent
+			where so.docstatus = 1
+			  and so.name != %s
+			  and soi.item_code = %s
+			""",
+			(doc.name or "", item_code),
+		)
+		approved_elsewhere = flt(other[0][0] if other else 0)
+
+		total_after_save = approved_elsewhere + qty_on_this
+		if total_after_save > cap:
+			available = cap - approved_elsewhere
+			frappe.throw(_(
+				"Cannot sell {0} of {1}: only {2} of {3} units remain available on {4} (reserved: {5})."
+			).format(qty_on_this, item_code, available, flt(site_row.total), site_row.site, flt(site_row.reserved)))
