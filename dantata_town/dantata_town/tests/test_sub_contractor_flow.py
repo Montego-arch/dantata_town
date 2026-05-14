@@ -59,6 +59,7 @@ class TestSubContractorFieldsInstalled(FrappeTestCase):
 
 from frappe.utils import today, add_days, flt
 
+from dantata_town.dantata_town.boq_progress import STAGE_TABLES
 from dantata_town.dantata_town.sub_contractor import (
 	make_request_from_boq,
 )
@@ -104,10 +105,7 @@ def _detail_for_flow():
 
 def _make_submitted_boq(site, project, sub_count=1, company_count=1, stage=1):
 	"""Create + submit a BOQ with N sub-contractor rows and M company rows in stage."""
-	stage_table = {
-		1: "table_txao", 2: "description2", 3: "description3",
-		4: "description4", 5: "description5", 6: "description6", 7: "description7",
-	}[stage]
+	stage_table = STAGE_TABLES[stage]
 	detail = _detail_for_flow()
 	doc = frappe.new_doc("Bill of Quantities")
 	doc.site = site

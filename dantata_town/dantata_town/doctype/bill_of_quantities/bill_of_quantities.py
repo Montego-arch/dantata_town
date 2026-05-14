@@ -7,19 +7,10 @@ from frappe.utils import flt, nowdate, get_link_to_form
 from frappe.model.document import Document
 
 
-STAGE_TABLE_FIELDS = [
-	"table_txao", "description2", "description3",
-	"description4", "description5", "description6", "description7"
-]
+STAGE_TABLE_FIELDS = ["table_txao"] + [f"description{n}" for n in range(2, 16)]
 
-STAGE_NAME_MAP = [
-	("stage_1", "table_txao", "stage_1_summary"),
-	("stage_2", "description2", "stage_2_summary"),
-	("stage_3", "description3", "stage_3_summary"),
-	("stage_4", "description4", "stage_4_summary"),
-	("stage_5", "description5", "stage_5_summary"),
-	("stage_6", "description6", "stage_6_summary"),
-	("stage_7", "description7", "stage_7_summary"),
+STAGE_NAME_MAP = [("stage_1", "table_txao", "stage_1_summary")] + [
+	(f"stage_{n}", f"description{n}", f"stage_{n}_summary") for n in range(2, 16)
 ]
 
 

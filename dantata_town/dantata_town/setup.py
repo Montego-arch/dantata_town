@@ -207,7 +207,7 @@ def _create_custom_fields():
 		],
 	}
 
-	# Per-stage tracking fields on Bill of Quantities (× 7 stages)
+	# Per-stage tracking fields on Bill of Quantities (× 15 stages)
 	stage_summary_fieldnames = {n: f"stage_{n}_summary" for n in range(1, 16)}
 	boq_stage_fields = []
 	for stage_no, summary_fieldname in stage_summary_fieldnames.items():
