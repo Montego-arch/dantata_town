@@ -395,17 +395,16 @@ def _create_boq_workflow():
 		wf.workflow_state_field = "workflow_state"
 
 	# Replace states.
-	# NOTE: Frappe blocks transitions from doc_status=1 → doc_status=0.
-	# Therefore all states reachable from "Approved" (doc_status=1) must also
-	# use doc_status=1. "Unlocked" is doc_status=1 with allow_edit=BOQ Approver
-	# so the approver can modify without cancelling. "Pending Approval" remains
-	# doc_status=0 so that Reject (→ Rejected, doc_status=0) is valid.
+	# NOTE: "Unlocked" is docstatus=0 — the custom unlock_boq_for_edit function
+	# bypasses Frappe's workflow engine to flip docstatus 1 → 0 directly via
+	# db.set_value. There is NO workflow transition into "Unlocked"; the state
+	# exists here only so it is a valid workflow_state value.
 	wf.states = []
 	for state_name, doc_status, allow_edit in [
 		("Draft", "0", system_manager),
 		("Pending Approval", "0", system_manager),
 		("Approved", "1", role_name),
-		("Unlocked", "1", role_name),
+		("Unlocked", "0", role_name),
 		("Rejected", "0", system_manager),
 	]:
 		wf.append("states", {
@@ -414,18 +413,16 @@ def _create_boq_workflow():
 			"allow_edit": allow_edit,
 		})
 
-	# Replace transitions.
-	# "Unlocked → Re-approve → Approved" is used instead of routing back through
-	# Pending Approval (which would require crossing the 1→0 docstatus boundary
-	# that Frappe's validate_docstatus disallows).
+	# Replace transitions — 5 only. "Approved → Unlocked" is NOT a workflow
+	# transition; the custom unlock_boq_for_edit function handles that path
+	# by writing docstatus/workflow_state directly (bypassing workflow engine).
 	wf.transitions = []
 	for state, action, next_state, allowed in [
 		("Draft", "Submit for Approval", "Pending Approval", system_manager),
 		("Pending Approval", "Approve", "Approved", role_name),
 		("Pending Approval", "Reject", "Rejected", role_name),
 		("Rejected", "Re-open", "Draft", system_manager),
-		("Approved", "Unlock for Edit", "Unlocked", role_name),
-		("Unlocked", "Re-approve", "Approved", role_name),
+		("Unlocked", "Submit for Approval", "Pending Approval", system_manager),
 	]:
 		wf.append("transitions", {
 			"state": state,

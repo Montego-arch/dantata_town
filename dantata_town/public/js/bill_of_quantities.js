@@ -72,6 +72,28 @@ frappe.ui.form.on("Bill of Quantities", {
 				open_sub_contractor_modal(frm);
 			});
 		}
+
+		if (
+			frm.doc.docstatus === 1
+			&& frm.doc.workflow_state === "Approved"
+			&& frappe.user.has_role("BOQ Approver")
+			&& !frm.is_new()
+		) {
+			frm.add_custom_button(__("Unlock for Edit"), () => {
+				frappe.confirm(
+					__("Unlock this BOQ for editing? It will revert to Draft state with the Unlocked workflow status."),
+					() => {
+						frappe.call({
+							method: "dantata_town.dantata_town.bill_of_quantities_workflow.unlock_boq_for_edit",
+							args: { name: frm.doc.name },
+							freeze: true,
+							freeze_message: __("Unlocking..."),
+							callback: () => frm.reload_doc(),
+						});
+					},
+				);
+			});
+		}
 	},
 });
 
