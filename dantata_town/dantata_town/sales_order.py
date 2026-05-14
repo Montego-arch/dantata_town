@@ -36,3 +36,20 @@ def enforce_one_so_per_project(doc, method=None):
 				doc.project, existing[0][0]
 			)
 		)
+
+
+@frappe.whitelist()
+def existing_so_for_project(project: str, current_so: str | None = None) -> str | None:
+	"""Return the name of any existing non-cancelled SO already linked to `project`,
+	excluding `current_so` if provided. Used by the SO form script for inline UX."""
+	if not project:
+		return None
+	row = frappe.db.sql(
+		"""
+		select name from `tabSales Order`
+		where project = %s and name != %s and docstatus != 2
+		limit 1
+		""",
+		(project, current_so or ""),
+	)
+	return row[0][0] if row else None

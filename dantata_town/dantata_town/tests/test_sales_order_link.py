@@ -139,3 +139,48 @@ class TestSalesOrderProjectHooks(FrappeTestCase):
 		so2 = self._make_so(project)
 		so2.insert(ignore_permissions=True)
 		self.assertEqual(so2.project, project.name)
+
+
+class TestExistingSOForProjectEndpoint(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+
+	def test_returns_none_when_no_existing(self):
+		from dantata_town.dantata_town.sales_order import existing_so_for_project
+		from dantata_town.dantata_town.tests.test_project_aggregations import _make_site_and_project
+		_, project = _make_site_and_project()
+		self.assertIsNone(existing_so_for_project(project))
+
+	def test_returns_so_name_when_one_exists(self):
+		from dantata_town.dantata_town.sales_order import existing_so_for_project
+		from dantata_town.dantata_town.tests.test_project_aggregations import _make_site_and_project
+		from frappe.utils import today, add_days
+		_, project = _make_site_and_project()
+		# Look up customer + non-stock item + cost_center for fixture.
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		item = frappe.db.get_value("Item", {"is_stock_item": 0, "disabled": 0}, "name")
+		company = frappe.db.get_value("Project", project, "company")
+		cost_center = frappe.db.get_value("Cost Center", {"company": company, "is_group": 0}, "name")
+		if not (customer and item and cost_center):
+			self.skipTest("Fixture prerequisites unavailable")
+		so = frappe.get_doc({
+			"doctype": "Sales Order",
+			"customer": customer,
+			"company": company,
+			"cost_center": cost_center,
+			"project": project,
+			"transaction_date": today(),
+			"delivery_date": add_days(today(), 7),
+			"items": [{
+				"item_code": item,
+				"qty": 1,
+				"rate": 100,
+				"delivery_date": add_days(today(), 7),
+				"cost_center": cost_center,
+			}],
+		}).insert(ignore_permissions=True)
+		so.submit()
+		# When current_so excludes this SO, endpoint returns None.
+		self.assertIsNone(existing_so_for_project(project, current_so=so.name))
+		# Without excluding, endpoint returns the SO name.
+		self.assertEqual(existing_so_for_project(project), so.name)
