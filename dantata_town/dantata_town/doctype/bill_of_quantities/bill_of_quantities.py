@@ -69,12 +69,19 @@ class BillofQuantities(Document):
 					material_total += flt(row.amount)
 
 			if labour_total or material_total:
+				# Recompute progress inline (count-based: completed rows / total rows).
+				# This avoids depending on hook firing order — recalc_boq_progress runs
+				# after validate(), so stage_N_progress may not be current here yet.
+				total_rows = len(rows)
+				done_rows = sum(1 for r in rows if r.get("completed"))
+				progress = (100 * done_rows / total_rows) if total_rows else 0
 				summary_row = {
 					"stage": label,
 					"description": label,
 					"labour": labour_total,
 					"material": material_total,
 					"amount": labour_total + material_total,
+					"progress": progress,
 				}
 				# Per-stage summary
 				self.append(summary_field, summary_row)

@@ -206,3 +206,62 @@ class TestStageTables(FrappeTestCase):
 		self.assertEqual(STAGE_TABLES[1], "table_txao")
 		for n in range(2, 16):
 			self.assertEqual(STAGE_TABLES[n], f"description{n}")
+
+
+class TestSummaryProgress(FrappeTestCase):
+	"""The Overall Summary table should mirror each stage's progress %."""
+
+	def setUp(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.tests.test_project_aggregations import _make_site_and_project
+		site, project = _make_site_and_project()
+		self.site = site
+		self.project = project
+		self.item = frappe.db.get_value("Item", {"disabled": 0}, "name")
+
+	def test_boq_summary_item_has_progress_field(self):
+		meta = frappe.get_meta("BOQ Summary Item")
+		fieldnames = {f.fieldname for f in meta.fields}
+		self.assertIn("progress", fieldnames)
+		progress = next(f for f in meta.fields if f.fieldname == "progress")
+		self.assertEqual(progress.fieldtype, "Percent")
+		self.assertEqual(progress.read_only, 1)
+
+	def test_overall_summary_row_carries_stage_progress(self):
+		boq = frappe.new_doc("Bill of Quantities")
+		boq.site = self.site
+		boq.project = self.project
+		boq.date = today()
+		boq.naming_series = "BOQ-.YYYY.-.#####"
+		boq.set("stage_1", "Foundations")
+		boq.set("stage_1_start_date", today())
+		boq.set("stage_1_end_date", add_days(today(), 7))
+		boq.append("table_txao", {
+			"description_type": "Material",
+			"item": self.item,
+			"planned_quantity": 10,
+			"rate": 100,
+			"completed": 1,
+		})
+		boq.set("stage_2", "Walls")
+		boq.set("stage_2_start_date", today())
+		boq.set("stage_2_end_date", add_days(today(), 7))
+		boq.append("description2", {
+			"description_type": "Material",
+			"item": self.item,
+			"planned_quantity": 5,
+			"rate": 50,
+			"completed": 0,
+		})
+		boq.append("description2", {
+			"description_type": "Material",
+			"item": self.item,
+			"planned_quantity": 3,
+			"rate": 40,
+			"completed": 1,
+		})
+		boq.insert(ignore_permissions=True)
+		# Stage 1: 1/1 = 100%. Stage 2: 1/2 = 50%.
+		stages_in_summary = {row.stage: flt(row.progress) for row in boq.summary}
+		self.assertEqual(stages_in_summary.get("Foundations"), 100.0)
+		self.assertEqual(stages_in_summary.get("Walls"), 50.0)
