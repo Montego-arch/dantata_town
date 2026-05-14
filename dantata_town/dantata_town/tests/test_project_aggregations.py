@@ -630,3 +630,19 @@ class TestProjectCompletion(FrappeTestCase):
 		boq.save()
 		value = frappe.db.get_value("Project", project, "project_completion_percent")
 		self.assertEqual(flt(value), 100.0)
+
+	def test_draft_boq_does_not_affect_completion(self):
+		"""Saving a draft BOQ on a project with a submitted 100% BOQ must keep completion at 100%."""
+		from dantata_town.dantata_town.project_aggregations import recalc_project_completion
+		site, project = _make_site_and_project()
+		boq_done = self._make_boq(project, site, {1: [{"completed": 1}]})
+		boq_done.submit()
+		recalc_project_completion(project)
+		self.assertEqual(flt(frappe.db.get_value("Project", project, "project_completion_percent")), 100.0)
+
+		# Now create a fresh draft BOQ on the same project — its validate hook
+		# fires recalc_project_completion. The draft must NOT pull the average down.
+		draft = self._make_boq(project, site, {1: [{"completed": 0}]})  # docstatus=0 by default
+		# After insert (which calls validate), completion should still be 100.
+		value = frappe.db.get_value("Project", project, "project_completion_percent")
+		self.assertEqual(flt(value), 100.0)

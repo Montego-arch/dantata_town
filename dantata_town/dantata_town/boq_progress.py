@@ -74,4 +74,9 @@ def recalc_boq_progress(doc, method=None):
 	# during validate, before the DB write).
 	if doc.project:
 		from dantata_town.dantata_town.project_aggregations import recalc_project_completion
-		recalc_project_completion(doc.project, triggering_boq=doc)
+		# Only inject the in-memory doc when it's already at docstatus=1 (the
+		# submit-time validate case, where doc.docstatus is set to 1 in memory
+		# before the DB write). Draft saves pass triggering=None so they don't
+		# pollute the completion average.
+		triggering = doc if doc.docstatus == 1 else None
+		recalc_project_completion(doc.project, triggering_boq=triggering)
