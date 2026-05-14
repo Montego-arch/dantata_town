@@ -13,7 +13,9 @@ def _make_site_and_project_minimal():
 	create_boq_custom_fields()
 	from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 	uom = frappe.db.get_value("UOM", {}, "name")
-	item = frappe.db.get_value("Item", {"disabled": 0}, "name")
+	# template_item is required since Phase 4; building_type is auto-set by Site.validate.
+	template_item = frappe.db.get_value("Item", {"disabled": 0, "has_variants": 0}, "name") \
+		or frappe.db.get_value("Item", {"disabled": 0}, "name")
 	customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
 	company = frappe.db.get_single_value("Global Defaults", "default_company") \
 		or frappe.db.get_value("Company", {}, "name")
@@ -21,7 +23,7 @@ def _make_site_and_project_minimal():
 		"doctype": "Site",
 		"site_name": f"SCPR-Site-{frappe.generate_hash(length=6)}",
 		"expense_account": get_test_expense_account(),
-		"project_units": [{"building_type": item, "unit": 1, "uom": uom, "rate": 1}],
+		"project_units": [{"template_item": template_item, "unit": 1, "uom": uom, "rate": 1}],
 	}).insert(ignore_permissions=True)
 	project = frappe.get_doc({
 		"doctype": "Project",
