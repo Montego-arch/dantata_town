@@ -47,7 +47,7 @@ No new fields. Use the standard `Sales Order.project` field.
 
 ### Server logic (`dantata_town/dantata_town/sales_order.py`)
 
-- `fetch_from_project(doc, method)` — on `before_save`:
+- `fetch_from_project(doc, method)` — on `before_validate`:
   - If `doc.project` and not `doc.customer`, set `doc.customer =
     Project.customer`.
 - `enforce_one_so_per_project(doc, method)` — on `validate`:
