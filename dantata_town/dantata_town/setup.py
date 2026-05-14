@@ -208,15 +208,7 @@ def _create_custom_fields():
 	}
 
 	# Per-stage tracking fields on Bill of Quantities (× 7 stages)
-	stage_summary_fieldnames = {
-		1: "stage_1_summary",
-		2: "stage_2_summary",
-		3: "stage_3_summary",
-		4: "stage_4_summary",
-		5: "stage_5_summary",
-		6: "stage_6_summary",
-		7: "stage_7_summary",
-	}
+	stage_summary_fieldnames = {n: f"stage_{n}_summary" for n in range(1, 16)}
 	boq_stage_fields = []
 	for stage_no, summary_fieldname in stage_summary_fieldnames.items():
 		previous = summary_fieldname
@@ -265,7 +257,7 @@ def _force_allow_on_submit_flags():
 	enforce = []
 	enforce.append(("BOQ Items", "completed"))
 	enforce.append(("BOQ Items", "assignment_type"))
-	for stage in range(1, 8):
+	for stage in range(1, 16):
 		for suffix in ("start_date", "end_date", "duration", "progress", "status"):
 			enforce.append(("Bill of Quantities", f"stage_{stage}_{suffix}"))
 
