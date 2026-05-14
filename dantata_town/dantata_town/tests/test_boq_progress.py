@@ -193,3 +193,14 @@ class TestValidateStageDates(FrappeTestCase):
 		doc.stage_1_end_date = add_days(today(), -2)
 		with self.assertRaises(frappe.ValidationError):
 			validate_stage_dates(doc)
+
+
+class TestStageTables(FrappeTestCase):
+	def test_stage_tables_covers_1_to_15(self):
+		"""STAGE_TABLES must include 15 stages with consistent fieldname pattern."""
+		self.assertEqual(set(STAGE_TABLES.keys()), set(range(1, 16)))
+		# Stages 2-15 should follow the `descriptionN` naming convention.
+		# Stage 1 keeps the legacy `table_txao` for backward compat.
+		self.assertEqual(STAGE_TABLES[1], "table_txao")
+		for n in range(2, 16):
+			self.assertEqual(STAGE_TABLES[n], f"description{n}")
