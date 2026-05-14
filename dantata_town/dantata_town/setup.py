@@ -196,6 +196,16 @@ def _create_custom_fields():
 				"module": "Dantata Town",
 			},
 		],
+		"Item": [
+			{
+				"fieldname": "reserved_unit",
+				"fieldtype": "Float",
+				"label": "Reserved",
+				"insert_after": "stock_uom",
+				"description": "Units held back from normal sale (mirror of Site project_units row).",
+				"module": "Dantata Town",
+			},
+		],
 		"Purchase Invoice": [
 			{
 				"fieldname": "site",

@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import flt
 
 from dantata_town.dantata_town.setup import create_boq_custom_fields
 
@@ -123,3 +124,69 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 			any("Created Item" in t for t in texts),
 			f"No 'Created Item' message in {texts}",
 		)
+
+
+class TestItemReservedUnitSync(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.tests._helpers import get_test_expense_account
+		self.expense_account = get_test_expense_account()
+		self.template = "TPL-Sync"
+		if not frappe.db.exists("Item", self.template):
+			item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups"
+			frappe.get_doc({
+				"doctype": "Item",
+				"item_code": self.template,
+				"item_name": self.template,
+				"item_group": item_group,
+				"is_stock_item": 0,
+				"stock_uom": "Nos",
+			}).insert(ignore_permissions=True)
+
+	def test_item_doctype_has_reserved_unit_field(self):
+		meta = frappe.get_meta("Item")
+		fieldnames = {f.fieldname for f in meta.fields}
+		self.assertIn("reserved_unit", fieldnames)
+		field = next(f for f in meta.fields if f.fieldname == "reserved_unit")
+		self.assertEqual(field.fieldtype, "Float")
+
+	def test_site_save_propagates_reserved_unit_to_item(self):
+		site = frappe.get_doc({
+			"doctype": "Site",
+			"site_name": f"SyncSite-{frappe.generate_hash(length=6)}",
+			"expense_account": self.expense_account,
+		})
+		site.append("project_units", {
+			"template_item": self.template,
+			"unit": 10,
+			"reserved_unit": 3,
+			"uom": "Nos",
+			"rate": 1000,
+		})
+		site.insert(ignore_permissions=True)
+		# Item should exist with reserved_unit=3.
+		per_site_item = site.project_units[0].building_type
+		item_reserved = frappe.db.get_value("Item", per_site_item, "reserved_unit")
+		self.assertEqual(flt(item_reserved), 3.0)
+
+	def test_reserved_unit_change_updates_item(self):
+		site = frappe.get_doc({
+			"doctype": "Site",
+			"site_name": f"SyncSite2-{frappe.generate_hash(length=6)}",
+			"expense_account": self.expense_account,
+		})
+		site.append("project_units", {
+			"template_item": self.template,
+			"unit": 10,
+			"reserved_unit": 0,
+			"uom": "Nos",
+			"rate": 1000,
+		})
+		site.insert(ignore_permissions=True)
+		per_site_item = site.project_units[0].building_type
+		# Initial: 0.
+		self.assertEqual(flt(frappe.db.get_value("Item", per_site_item, "reserved_unit")), 0.0)
+		# Now bump it.
+		site.project_units[0].reserved_unit = 5
+		site.save(ignore_permissions=True)
+		self.assertEqual(flt(frappe.db.get_value("Item", per_site_item, "reserved_unit")), 5.0)

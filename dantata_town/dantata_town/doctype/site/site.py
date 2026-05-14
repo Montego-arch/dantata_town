@@ -60,6 +60,11 @@ class Site(Document):
 					indicator="blue",
 				)
 			row.building_type = target_name
+			# Mirror reserved_unit to the per-site Item.
+			frappe.db.set_value(
+				"Item", target_name, "reserved_unit", flt(row.reserved_unit),
+				update_modified=False,
+			)
 
 	def calculate_totals(self):
 		total = 0
