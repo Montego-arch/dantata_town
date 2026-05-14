@@ -67,3 +67,11 @@ def recalc_boq_progress(doc, method=None):
 			f"stage_{stage_no}_duration",
 			(getdate(end) - getdate(start)).days if start and end else 0,
 		)
+
+	# After per-stage recompute, roll the BOQ's progress up to the linked Project.
+	# Pass `doc` so recalc_project_completion can use the freshly computed in-memory
+	# progress values rather than re-reading stale data from the DB (this hook fires
+	# during validate, before the DB write).
+	if doc.project:
+		from dantata_town.dantata_town.project_aggregations import recalc_project_completion
+		recalc_project_completion(doc.project, triggering_boq=doc)

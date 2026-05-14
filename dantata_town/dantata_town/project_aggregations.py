@@ -170,6 +170,58 @@ def _sum_payment_entry_references(project: str) -> float:
 	return flt(rows[0].total) if rows else 0
 
 
+def recalc_project_completion(project: str | None, triggering_boq=None) -> None:
+	"""Average BOQ stage progress (active stages only) and persist to Project.
+
+	`triggering_boq` may be passed as the in-memory BOQ document when this is
+	called from a validate hook (before DB flush). Its stage_N_progress values
+	are used directly so the rollup reflects the current in-memory state.
+	"""
+	if not project or not frappe.db.exists("Project", project):
+		return
+
+	from dantata_town.dantata_town.boq_progress import STAGE_TABLES
+
+	boqs = frappe.get_all(
+		"Bill of Quantities",
+		filters={"project": project, "docstatus": 1},
+		pluck="name",
+	)
+	# Include the triggering BOQ even if it is not yet docstatus=1 in the DB
+	# (e.g. it was submitted but the validate hook fires before the DB write).
+	triggering_name = triggering_boq.name if triggering_boq else None
+	if triggering_name and triggering_name not in boqs:
+		boqs.append(triggering_name)
+
+	if not boqs:
+		frappe.db.set_value(
+			"Project", project, "project_completion_percent", 0,
+			update_modified=False,
+		)
+		return
+
+	boq_completions = []
+	for boq_name in boqs:
+		# Use the in-memory doc when available; otherwise fetch from DB.
+		if triggering_boq and boq_name == triggering_name:
+			boq = triggering_boq
+		else:
+			boq = frappe.get_doc("Bill of Quantities", boq_name)
+		active = [
+			flt(boq.get(f"stage_{n}_progress"))
+			for n, table_field in STAGE_TABLES.items()
+			if boq.get(table_field)
+		]
+		if active:
+			boq_completions.append(sum(active) / len(active))
+
+	completion = (sum(boq_completions) / len(boq_completions)) if boq_completions else 0
+	frappe.db.set_value(
+		"Project", project, "project_completion_percent", completion,
+		update_modified=False,
+	)
+
+
 @frappe.whitelist()
 def get_site_building_types(doctype, txt, searchfield, start, page_len, filters):
 	"""Search-query handler for the Project.building_type set_query.

@@ -548,3 +548,85 @@ class TestProjectAggregationHooks(FrappeTestCase):
 			flt(frappe.db.get_value("Project", p2, "project_expenses")),
 			200,
 		)
+
+
+class TestProjectCompletion(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+		self.company = frappe.db.get_single_value("Global Defaults", "default_company")
+
+	def _make_boq(self, project_name, site_name, stage_rows):
+		"""Build (do not submit) a BOQ with the given stage rows.
+
+		`stage_rows` is a dict like {1: [{"completed": 1}], 2: [{"completed": 0}]}.
+		Each entry's stage gets start/end dates set (so validate passes) and the
+		given rows appended to the relevant child table.
+		"""
+		from dantata_town.dantata_town.boq_progress import STAGE_TABLES
+		boq = frappe.new_doc("Bill of Quantities")
+		boq.site = site_name
+		boq.project = project_name
+		boq.date = today()
+		boq.naming_series = "BOQ-.YYYY.-.#####"
+		for stage_no, rows in stage_rows.items():
+			boq.set(f"stage_{stage_no}", f"Stage {stage_no}")
+			boq.set(f"stage_{stage_no}_start_date", today())
+			boq.set(f"stage_{stage_no}_end_date", add_days(today(), 7))
+			for row in rows:
+				# Each row needs at least an item_code to satisfy BOQ Items validation.
+				if "item_code" not in row:
+					row["item_code"] = frappe.db.get_value("Item", {"disabled": 0}, "name")
+				boq.append(STAGE_TABLES[stage_no], row)
+		boq.insert(ignore_permissions=True)
+		return boq
+
+	def test_completion_averages_active_stages_only(self):
+		from dantata_town.dantata_town.project_aggregations import recalc_project_completion
+		site, project = _make_site_and_project()
+		boq = self._make_boq(
+			project_name=project,
+			site_name=site,
+			stage_rows={
+				1: [{"completed": 1}],
+				2: [{"completed": 1}, {"completed": 0}],
+			},
+		)
+		boq.submit()
+		recalc_project_completion(project)
+		value = frappe.db.get_value("Project", project, "project_completion_percent")
+		# Active stages: 1 (100%), 2 (50%). Average = 75.
+		self.assertEqual(flt(value), 75.0)
+
+	def test_completion_zero_when_no_active_stages(self):
+		from dantata_town.dantata_town.project_aggregations import recalc_project_completion
+		site, project = _make_site_and_project()
+		recalc_project_completion(project)
+		value = frappe.db.get_value("Project", project, "project_completion_percent")
+		self.assertEqual(flt(value), 0.0)
+
+	def test_completion_two_boqs_equally_weighted(self):
+		from dantata_town.dantata_town.project_aggregations import recalc_project_completion
+		site, project = _make_site_and_project()
+		boq_a = self._make_boq(project, site, {1: [{"completed": 1}]})  # 100%
+		boq_b = self._make_boq(project, site, {1: [{"completed": 0}, {"completed": 0}]})  # 0%
+		boq_a.submit()
+		boq_b.submit()
+		recalc_project_completion(project)
+		value = frappe.db.get_value("Project", project, "project_completion_percent")
+		# Avg of 100 and 0 = 50.
+		self.assertEqual(flt(value), 50.0)
+
+	def test_completion_recalculated_on_boq_save(self):
+		"""Toggling stage rows on a saved BOQ should roll up the new % without explicit recalc call."""
+		site, project = _make_site_and_project()
+		boq = self._make_boq(project, site, {1: [{"completed": 0}]})
+		boq.submit()
+		# Initially 0% complete.
+		value = frappe.db.get_value("Project", project, "project_completion_percent")
+		self.assertEqual(flt(value), 0.0)
+		# Now flip the completed checkbox on the single row, save, and expect 100%.
+		boq.reload()
+		boq.get("table_txao")[0].completed = 1
+		boq.save()
+		value = frappe.db.get_value("Project", project, "project_completion_percent")
+		self.assertEqual(flt(value), 100.0)

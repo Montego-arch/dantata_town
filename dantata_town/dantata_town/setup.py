@@ -112,6 +112,14 @@ def _create_custom_fields():
 				"read_only": 1,
 				"module": "Dantata Town",
 			},
+			{
+				"fieldname": "project_completion_percent",
+				"fieldtype": "Percent",
+				"label": "Completion",
+				"insert_after": "project_payment",
+				"read_only": 1,
+				"module": "Dantata Town",
+			},
 		],
 		"Quotation": [
 			{

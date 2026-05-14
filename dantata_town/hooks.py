@@ -186,6 +186,9 @@ doc_events = {
 			"dantata_town.dantata_town.boq_progress.validate_stage_dates",
 			"dantata_town.dantata_town.boq_progress.recalc_boq_progress",
 		],
+		"on_update_after_submit": [
+			"dantata_town.dantata_town.boq_progress.recalc_boq_progress",
+		],
 	},
 }
 
