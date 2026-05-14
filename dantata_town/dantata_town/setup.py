@@ -12,12 +12,14 @@ PROJECT_TYPE_SEED = {
 
 def create_boq_custom_fields():
 	"""Register custom fields on Material Request, Project, Quotation, BOQ
-	Items, and Purchase Invoice; seed Dantata Town project types and subtypes.
+	Items, and Purchase Invoice; seed Dantata Town project types and subtypes;
+	and install BOQ workflow.
 	(Site customizations live in site.json.)"""
 	_create_custom_fields()
 	_create_property_setters()
 	_cleanup_broken_project_links()
 	_seed_project_types_and_subtypes()
+	_create_boq_workflow()
 
 
 def _create_custom_fields():
@@ -340,3 +342,106 @@ def _seed_project_types_and_subtypes():
 					"subtype_name": subtype,
 					"project_type": project_type,
 				}).insert(ignore_permissions=True)
+
+
+def _create_boq_workflow():
+	"""Create BOQ Approver role + workflow; backfill existing submitted BOQs.
+
+	Idempotent: safe to run multiple times via after_install / after_migrate.
+	"""
+	role_name = "BOQ Approver"
+	system_manager = "System Manager"
+
+	if not frappe.db.exists("Role", role_name):
+		frappe.get_doc({
+			"doctype": "Role",
+			"role_name": role_name,
+			"desk_access": 1,
+		}).insert(ignore_permissions=True)
+
+	# Workflow State and Action master records must exist before the Workflow.
+	for state_name, style in [
+		("Draft", "Warning"),
+		("Pending Approval", "Primary"),
+		("Approved", "Success"),
+		("Unlocked", "Danger"),
+		("Rejected", "Danger"),
+	]:
+		if not frappe.db.exists("Workflow State", state_name):
+			frappe.get_doc({
+				"doctype": "Workflow State",
+				"workflow_state_name": state_name,
+				"style": style,
+			}).insert(ignore_permissions=True)
+
+	for action in [
+		"Submit for Approval", "Approve", "Reject", "Re-open", "Unlock for Edit", "Re-approve",
+	]:
+		if not frappe.db.exists("Workflow Action Master", action):
+			frappe.get_doc({
+				"doctype": "Workflow Action Master",
+				"workflow_action_name": action,
+			}).insert(ignore_permissions=True)
+
+	workflow_name = "Bill of Quantities Approval"
+	if frappe.db.exists("Workflow", workflow_name):
+		wf = frappe.get_doc("Workflow", workflow_name)
+		wf.is_active = 1
+	else:
+		wf = frappe.new_doc("Workflow")
+		wf.workflow_name = workflow_name
+		wf.document_type = "Bill of Quantities"
+		wf.is_active = 1
+		wf.workflow_state_field = "workflow_state"
+
+	# Replace states.
+	# NOTE: Frappe blocks transitions from doc_status=1 → doc_status=0.
+	# Therefore all states reachable from "Approved" (doc_status=1) must also
+	# use doc_status=1. "Unlocked" is doc_status=1 with allow_edit=BOQ Approver
+	# so the approver can modify without cancelling. "Pending Approval" remains
+	# doc_status=0 so that Reject (→ Rejected, doc_status=0) is valid.
+	wf.states = []
+	for state_name, doc_status, allow_edit in [
+		("Draft", "0", system_manager),
+		("Pending Approval", "0", system_manager),
+		("Approved", "1", role_name),
+		("Unlocked", "1", role_name),
+		("Rejected", "0", system_manager),
+	]:
+		wf.append("states", {
+			"state": state_name,
+			"doc_status": doc_status,
+			"allow_edit": allow_edit,
+		})
+
+	# Replace transitions.
+	# "Unlocked → Re-approve → Approved" is used instead of routing back through
+	# Pending Approval (which would require crossing the 1→0 docstatus boundary
+	# that Frappe's validate_docstatus disallows).
+	wf.transitions = []
+	for state, action, next_state, allowed in [
+		("Draft", "Submit for Approval", "Pending Approval", system_manager),
+		("Pending Approval", "Approve", "Approved", role_name),
+		("Pending Approval", "Reject", "Rejected", role_name),
+		("Rejected", "Re-open", "Draft", system_manager),
+		("Approved", "Unlock for Edit", "Unlocked", role_name),
+		("Unlocked", "Re-approve", "Approved", role_name),
+	]:
+		wf.append("transitions", {
+			"state": state,
+			"action": action,
+			"next_state": next_state,
+			"allowed": allowed,
+		})
+
+	wf.save(ignore_permissions=True)
+
+	# Backfill: any submitted BOQ without a workflow_state becomes "Approved".
+	frappe.db.sql(
+		"""
+		update `tabBill of Quantities`
+		set workflow_state = 'Approved'
+		where docstatus = 1
+		  and (workflow_state is null or workflow_state = '')
+		"""
+	)
