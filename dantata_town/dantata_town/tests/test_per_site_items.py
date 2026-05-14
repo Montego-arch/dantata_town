@@ -102,3 +102,24 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 		site.insert(ignore_permissions=True)
 		with self.assertRaises(frappe.ValidationError):
 			frappe.rename_doc("Site", site.name, f"{site.site_name}-renamed")
+
+	def test_msgprint_fires_on_auto_create(self):
+		"""When a new per-site Item is created, a msgprint should fire announcing it."""
+		import frappe.utils.response
+		# Clear messages.
+		frappe.local.message_log = []
+		site = self._make_site()
+		site.append("project_units", {
+			"template_item": self.template,
+			"unit": 1,
+			"uom": "Nos",
+			"rate": 100,
+		})
+		site.insert(ignore_permissions=True)
+		messages = frappe.local.message_log
+		# At least one message mentions "Created Item".
+		texts = [str(m) for m in messages]
+		self.assertTrue(
+			any("Created Item" in t for t in texts),
+			f"No 'Created Item' message in {texts}",
+		)

@@ -52,6 +52,13 @@ class Site(Document):
 				# Drop company-specific defaults to avoid warehouse/company mismatch errors.
 				new_item.set("item_defaults", [])
 				new_item.insert(ignore_permissions=True)
+				frappe.msgprint(
+					_("Created Item: {0}").format(
+						frappe.utils.get_link_to_form("Item", target_name)
+					),
+					alert=True,
+					indicator="blue",
+				)
 			row.building_type = target_name
 
 	def calculate_totals(self):
