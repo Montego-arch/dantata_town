@@ -190,6 +190,10 @@ doc_events = {
 			"dantata_town.dantata_town.boq_progress.recalc_boq_progress",
 		],
 	},
+	"Sales Order": {
+		"before_validate": "dantata_town.dantata_town.sales_order.fetch_from_project",
+		"validate": "dantata_town.dantata_town.sales_order.enforce_one_so_per_project",
+	},
 }
 
 # Scheduled Tasks

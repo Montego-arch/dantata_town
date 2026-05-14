@@ -65,3 +65,77 @@ class TestProjectNameNotUnique(FrappeTestCase):
 		self.assertEqual(p1.project_name, shared_name)
 		self.assertEqual(p2.project_name, shared_name)
 		self.assertNotEqual(p1.name, p2.name)
+
+
+class TestSalesOrderProjectHooks(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+		# Look up an existing Customer + Item for fixture reuse.
+		customer = frappe.get_all("Customer", {"disabled": 0}, limit=1, pluck="name")
+		if not customer:
+			self.skipTest("No customer in this site")
+		self.customer = customer[0]
+		item = frappe.get_all("Item", filters={"is_stock_item": 0, "disabled": 0}, limit=1, pluck="name")
+		if not item:
+			self.skipTest("No non-stock item in this site")
+		self.item = item[0]
+
+	def _make_project(self):
+		from dantata_town.dantata_town.tests.test_project_aggregations import _make_site_and_project
+		_, project = _make_site_and_project()
+		return frappe.get_doc("Project", project)
+
+	def _make_so(self, project, customer=None, qty=1):
+		from frappe.utils import today, add_days
+		so = frappe.new_doc("Sales Order")
+		if customer:
+			so.customer = customer
+		so.project = project.name
+		so.company = project.company
+		so.transaction_date = today()
+		so.delivery_date = add_days(today(), 7)
+		cost_center = frappe.db.get_value(
+			"Cost Center",
+			{"company": project.company, "is_group": 0},
+			"name",
+		)
+		so.cost_center = cost_center
+		so.append("items", {
+			"item_code": self.item,
+			"qty": qty,
+			"rate": 100,
+			"delivery_date": add_days(today(), 7),
+			"cost_center": cost_center,
+		})
+		return so
+
+	def test_customer_fetched_from_project_when_missing(self):
+		project = self._make_project()
+		so = self._make_so(project, customer=None)
+		so.insert(ignore_permissions=True)
+		self.assertEqual(so.customer, project.customer)
+
+	def test_existing_customer_not_overwritten(self):
+		project = self._make_project()
+		so = self._make_so(project, customer=self.customer)
+		so.insert(ignore_permissions=True)
+		self.assertEqual(so.customer, self.customer)
+
+	def test_second_so_for_same_project_blocked(self):
+		project = self._make_project()
+		so1 = self._make_so(project)
+		so1.insert(ignore_permissions=True)
+		so1.submit()
+		so2 = self._make_so(project)
+		with self.assertRaisesRegex(frappe.ValidationError, "already linked"):
+			so2.insert(ignore_permissions=True)
+
+	def test_cancelled_so_does_not_block_new_one(self):
+		project = self._make_project()
+		so1 = self._make_so(project)
+		so1.insert(ignore_permissions=True)
+		so1.submit()
+		so1.cancel()
+		so2 = self._make_so(project)
+		so2.insert(ignore_permissions=True)
+		self.assertEqual(so2.project, project.name)
