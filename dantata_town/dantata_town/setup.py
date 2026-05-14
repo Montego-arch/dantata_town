@@ -308,6 +308,8 @@ def _create_property_setters():
 		("Project", "building_type", "allow_in_quick_entry", "1", "Check"),
 		("Project", "project_type", "reqd", "1", "Check"),
 		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
+		("Payment Schedule", "paid_amount", "in_list_view", "1", "Check"),
+		("Payment Schedule", "outstanding", "in_list_view", "1", "Check"),
 		("Project", "total_sales_amount", "hidden", "0", "Check"),
 		("Project", "total_sales_amount", "label", "Sales Order Amount", "Data"),
 		("Project", "project_name", "unique", "0", "Check"),
