@@ -67,6 +67,23 @@ class TestSiteAutoCreateDefaults(FrappeTestCase):
 		site.save(ignore_permissions=True)
 		self.assertEqual(frappe.db.count("Item", {"item_code": expected_item}), 1)
 
+	def test_row_uom_mirrors_per_site_item_stock_uom(self):
+		"""When a row is saved without a UOM, the auto-created Item's stock_uom
+		should populate the row's UOM column so the grid shows the unit clearly."""
+		site = frappe.get_doc({
+			"doctype": "Site",
+			"site_name": f"UomSite-{frappe.generate_hash(length=6)}",
+			"expense_account": self.expense_account,
+			"project_units": [{
+				"template_item": "UomTest",
+				"unit": 5,
+				"reserved_unit": 0,
+				"rate": 1000,
+			}],
+		})
+		site.insert(ignore_permissions=True)
+		self.assertEqual(site.project_units[0].uom, "Unit")
+
 	def test_sellable_unit_computed_on_save(self):
 		site = frappe.get_doc({
 			"doctype": "Site",

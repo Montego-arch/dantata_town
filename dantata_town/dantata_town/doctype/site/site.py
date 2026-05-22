@@ -119,6 +119,9 @@ class Site(Document):
 					indicator="blue",
 				)
 			row.building_type = target_name
+			# Mirror the per-site Item's stock_uom into the grid's UOM column so
+			# the user sees the actual unit instead of an empty field.
+			row.uom = frappe.db.get_value("Item", target_name, "stock_uom")
 			frappe.db.set_value(
 				"Item", target_name, "reserved_unit", flt(row.reserved_unit),
 				update_modified=False,
