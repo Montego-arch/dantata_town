@@ -52,18 +52,17 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 		create_boq_custom_fields()
 		from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 		self.expense_account = get_test_expense_account()
-		# Ensure a template Item exists.
-		self.template = "TPL Apartments"
-		if not frappe.db.exists("Item", self.template):
-			item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups"
+		# Ensure setup preconditions for the new Data-field auto-create path.
+		if not frappe.db.exists("Item Group", "PROPERTIES"):
 			frappe.get_doc({
-				"doctype": "Item",
-				"item_code": self.template,
-				"item_name": self.template,
-				"item_group": item_group,
-				"is_stock_item": 0,
-				"stock_uom": "Nos",
+				"doctype": "Item Group",
+				"item_group_name": "PROPERTIES",
+				"parent_item_group": "All Item Groups",
+				"is_group": 0,
 			}).insert(ignore_permissions=True)
+		if not frappe.db.exists("UOM", "Unit"):
+			frappe.get_doc({"doctype": "UOM", "uom_name": "Unit"}).insert(ignore_permissions=True)
+		self.template = "TPL Apartments"  # typed string, not an Item record
 
 	def _make_site(self, name=None):
 		name = name or f"AutoSite-{frappe.generate_hash(length=6)}"
@@ -79,7 +78,7 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 			"template_item": self.template,
 			"unit": 10,
 			"reserved_unit": 0,
-			"uom": "Nos",
+			"uom": "Unit",
 			"rate": 1000,
 		})
 		site.insert(ignore_permissions=True)
@@ -92,11 +91,10 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 		site.append("project_units", {
 			"template_item": self.template,
 			"unit": 5,
-			"uom": "Nos",
+			"uom": "Unit",
 			"rate": 1000,
 		})
 		site.insert(ignore_permissions=True)
-		# Re-save: building_type should remain identical, no duplicate Item.
 		first_item = site.project_units[0].building_type
 		site.save(ignore_permissions=True)
 		self.assertEqual(site.project_units[0].building_type, first_item)
@@ -108,7 +106,7 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 		site.append("project_units", {
 			"template_item": self.template,
 			"unit": 1,
-			"uom": "Nos",
+			"uom": "Unit",
 			"rate": 100,
 		})
 		site.insert(ignore_permissions=True)
@@ -116,21 +114,16 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 			frappe.rename_doc("Site", site.name, f"{site.site_name}-renamed")
 
 	def test_msgprint_fires_on_auto_create(self):
-		"""When a new per-site Item is created, a msgprint should fire announcing it."""
-		import frappe.utils.response
-		# Clear messages.
 		frappe.local.message_log = []
 		site = self._make_site()
 		site.append("project_units", {
 			"template_item": self.template,
 			"unit": 1,
-			"uom": "Nos",
+			"uom": "Unit",
 			"rate": 100,
 		})
 		site.insert(ignore_permissions=True)
-		messages = frappe.local.message_log
-		# At least one message mentions "Created Item".
-		texts = [str(m) for m in messages]
+		texts = [str(m) for m in frappe.local.message_log]
 		self.assertTrue(
 			any("Created Item" in t for t in texts),
 			f"No 'Created Item' message in {texts}",
@@ -142,17 +135,16 @@ class TestItemReservedUnitSync(FrappeTestCase):
 		create_boq_custom_fields()
 		from dantata_town.dantata_town.tests._helpers import get_test_expense_account
 		self.expense_account = get_test_expense_account()
-		self.template = "TPL-Sync"
-		if not frappe.db.exists("Item", self.template):
-			item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups"
+		if not frappe.db.exists("Item Group", "PROPERTIES"):
 			frappe.get_doc({
-				"doctype": "Item",
-				"item_code": self.template,
-				"item_name": self.template,
-				"item_group": item_group,
-				"is_stock_item": 0,
-				"stock_uom": "Nos",
+				"doctype": "Item Group",
+				"item_group_name": "PROPERTIES",
+				"parent_item_group": "All Item Groups",
+				"is_group": 0,
 			}).insert(ignore_permissions=True)
+		if not frappe.db.exists("UOM", "Unit"):
+			frappe.get_doc({"doctype": "UOM", "uom_name": "Unit"}).insert(ignore_permissions=True)
+		self.template = "TPL-Sync"
 
 	def test_item_doctype_has_reserved_unit_field(self):
 		meta = frappe.get_meta("Item")
@@ -171,11 +163,10 @@ class TestItemReservedUnitSync(FrappeTestCase):
 			"template_item": self.template,
 			"unit": 10,
 			"reserved_unit": 3,
-			"uom": "Nos",
+			"uom": "Unit",
 			"rate": 1000,
 		})
 		site.insert(ignore_permissions=True)
-		# Item should exist with reserved_unit=3.
 		per_site_item = site.project_units[0].building_type
 		item_reserved = frappe.db.get_value("Item", per_site_item, "reserved_unit")
 		self.assertEqual(flt(item_reserved), 3.0)
@@ -190,14 +181,12 @@ class TestItemReservedUnitSync(FrappeTestCase):
 			"template_item": self.template,
 			"unit": 10,
 			"reserved_unit": 0,
-			"uom": "Nos",
+			"uom": "Unit",
 			"rate": 1000,
 		})
 		site.insert(ignore_permissions=True)
 		per_site_item = site.project_units[0].building_type
-		# Initial: 0.
 		self.assertEqual(flt(frappe.db.get_value("Item", per_site_item, "reserved_unit")), 0.0)
-		# Now bump it.
 		site.project_units[0].reserved_unit = 5
 		site.save(ignore_permissions=True)
 		self.assertEqual(flt(frappe.db.get_value("Item", per_site_item, "reserved_unit")), 5.0)
