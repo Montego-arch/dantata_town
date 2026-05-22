@@ -16,6 +16,7 @@ class TestProjectUnitItemSchema(FrappeTestCase):
 		template = next(f for f in meta.fields if f.fieldname == "template_item")
 		self.assertEqual(template.fieldtype, "Data")
 		self.assertEqual(template.reqd, 1)
+		# Label is intentionally retained as "Template Item" even though type changed.
 		self.assertEqual(template.label, "Template Item")
 
 	def test_sellable_unit_field_exists(self):
