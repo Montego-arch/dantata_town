@@ -8,7 +8,7 @@ from frappe.utils import flt
 
 
 def recalc_project_totals(project: str | None) -> None:
-	"""Recompute project_expenses and project_payment from submitted docs.
+	"""Recompute project_expenses, project_payment, and total_sales_amount from submitted docs.
 
 	Re-sums from docstatus=1 rows so cancellation/amendment is naturally consistent.
 	No-op if project is falsy or does not exist.
@@ -26,10 +26,15 @@ def recalc_project_totals(project: str | None) -> None:
 		_sum_payment_entry_references(project)
 		+ _sum_journal_credits_to_receivable(project)
 	)
+	sales = _sum_sales_orders(project)
 	frappe.db.set_value(
 		"Project",
 		project,
-		{"project_expenses": expenses, "project_payment": payment},
+		{
+			"project_expenses": expenses,
+			"project_payment": payment,
+			"total_sales_amount": sales,
+		},
 		update_modified=False,
 	)
 
@@ -76,6 +81,9 @@ def _projects_touched_by(doc) -> Iterable[str]:
 			project = frappe.db.get_value(ref_dt, ref_name, "project")
 			if project:
 				projects.add(project)
+	elif dt == "Sales Order":
+		if doc.get("project"):
+			projects.add(doc.project)
 	return projects
 
 
@@ -168,6 +176,18 @@ def _sum_payment_entry_references(project: str) -> float:
 		as_dict=True,
 	)
 	return flt(rows[0].total) if rows else 0
+
+
+def _sum_sales_orders(project: str) -> float:
+	rows = frappe.db.sql(
+		"""
+		select coalesce(sum(base_net_total), 0)
+		from `tabSales Order`
+		where project = %s and docstatus = 1
+		""",
+		(project,),
+	)
+	return flt(rows[0][0]) if rows else 0
 
 
 def recalc_project_completion(project: str | None, triggering_boq=None) -> None:

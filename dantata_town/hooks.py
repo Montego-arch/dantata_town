@@ -211,6 +211,8 @@ doc_events = {
 			"dantata_town.dantata_town.sales_order.enforce_one_so_per_project",
 			"dantata_town.dantata_town.sales_order.check_reservations",
 		],
+		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
 	},
 }
 

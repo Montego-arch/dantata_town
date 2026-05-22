@@ -560,6 +560,83 @@ class TestProjectAggregationHooks(FrappeTestCase):
 		)
 
 
+class TestSalesOrderAmountRecompute(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.tests._helpers import (
+			get_test_expense_account,
+			ensure_site_preconditions,
+		)
+		self.expense_account = get_test_expense_account()
+		ensure_site_preconditions()
+
+	def _make_site_project_and_so(self, qty: float = 1, rate: float = 1000000):
+		"""Build Site (with auto-created per-site Item), Project linked to Site, and
+		one submitted SO that quotes the per-site Item with project field SET."""
+		template = "SO-Amt"
+		site = frappe.get_doc({
+			"doctype": "Site",
+			"site_name": f"SOAmtSite-{frappe.generate_hash(length=6)}",
+			"expense_account": self.expense_account,
+			"project_units": [{
+				"template_item": template,
+				"unit": 10,
+				"uom": "Unit",
+				"rate": rate,
+			}],
+		}).insert(ignore_permissions=True)
+		per_site_item = site.project_units[0].building_type
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		project = frappe.get_doc({
+			"doctype": "Project",
+			"project_name": f"SOAmtProj-{frappe.generate_hash(length=6)}",
+			"customer": customer,
+			"company": company,
+			"site": site.name,
+			"project_type": "Building",
+			"project_subtype": "PLOT",
+		}).insert(ignore_permissions=True)
+		cost_center = frappe.db.get_value(
+			"Cost Center", {"company": company, "is_group": 0}, "name"
+		)
+		so = frappe.get_doc({
+			"doctype": "Sales Order",
+			"customer": customer,
+			"company": company,
+			"transaction_date": today(),
+			"delivery_date": add_days(today(), 7),
+			"project": project.name,
+			"cost_center": cost_center,
+			"items": [{
+				"item_code": per_site_item,
+				"qty": qty,
+				"rate": rate,
+				"delivery_date": add_days(today(), 7),
+				"cost_center": cost_center,
+			}],
+		})
+		so.set_missing_values()
+		so.insert(ignore_permissions=True)
+		so.submit()
+		return site.name, project.name, so.name
+
+	def test_so_submit_updates_total_sales_amount(self):
+		_, project, _so = self._make_site_project_and_so(qty=1, rate=2_500_000)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project, "total_sales_amount")),
+			2_500_000,
+		)
+
+	def test_so_cancel_zeros_total_sales_amount(self):
+		_, project, so_name = self._make_site_project_and_so(qty=1, rate=1_500_000)
+		frappe.get_doc("Sales Order", so_name).cancel()
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project, "total_sales_amount")),
+			0,
+		)
+
+
 class TestProjectCompletion(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
