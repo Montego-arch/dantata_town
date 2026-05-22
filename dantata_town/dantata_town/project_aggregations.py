@@ -179,15 +179,18 @@ def _sum_payment_entry_references(project: str) -> float:
 
 
 def _sum_sales_orders(project: str) -> float:
+	# base_net_total (not net_total or grand_total) is Company Currency post-discount;
+	# matches ERPNext core's own Project.update_sales_amount and is safe for multi-currency SOs.
 	rows = frappe.db.sql(
 		"""
-		select coalesce(sum(base_net_total), 0)
+		select sum(base_net_total) as total
 		from `tabSales Order`
 		where project = %s and docstatus = 1
 		""",
 		(project,),
+		as_dict=True,
 	)
-	return flt(rows[0][0]) if rows else 0
+	return flt(rows[0].total) if rows else 0
 
 
 def recalc_project_completion(project: str | None, triggering_boq=None) -> None:

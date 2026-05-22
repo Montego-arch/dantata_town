@@ -607,6 +607,7 @@ class TestSalesOrderAmountRecompute(FrappeTestCase):
 			"transaction_date": today(),
 			"delivery_date": add_days(today(), 7),
 			"project": project.name,
+			# cost_center is mandatory on this site via a Property Setter; harmless on fresh sites.
 			"cost_center": cost_center,
 			"items": [{
 				"item_code": per_site_item,
