@@ -21,5 +21,14 @@ def execute():
 		"""
 	)
 	for p in projects:
-		recalc_project_totals(p)
+		# Per-project try/except so one bad row (e.g., orphaned SO data) doesn't
+		# abort the whole backfill — Frappe's patch log marks the patch executed
+		# even on partial failure, so a clean log line per failure is critical.
+		try:
+			recalc_project_totals(p)
+		except Exception as e:
+			frappe.log_error(
+				f"Backfill failed for Project {p}: {e}",
+				"recalc_sales_amount_for_existing_projects",
+			)
 	frappe.db.commit()
