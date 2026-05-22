@@ -16,3 +16,18 @@ def get_test_expense_account():
 	) or frappe.db.get_value(
 		"Account", {"company": company, "is_group": 0, "root_type": "Expense"}, "name"
 	)
+
+
+def ensure_site_preconditions():
+	"""Ensure the hardcoded defaults Site._check_setup_preconditions requires.
+
+	Idempotent — safe to call from any test setUp."""
+	if not frappe.db.exists("Item Group", "PROPERTIES"):
+		frappe.get_doc({
+			"doctype": "Item Group",
+			"item_group_name": "PROPERTIES",
+			"parent_item_group": "All Item Groups",
+			"is_group": 0,
+		}).insert(ignore_permissions=True)
+	if not frappe.db.exists("UOM", "Unit"):
+		frappe.get_doc({"doctype": "UOM", "uom_name": "Unit"}).insert(ignore_permissions=True)

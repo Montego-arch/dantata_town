@@ -50,18 +50,12 @@ class TestProjectUnitItemSchema(FrappeTestCase):
 class TestSiteAutoCreatesItems(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
-		from dantata_town.dantata_town.tests._helpers import get_test_expense_account
+		from dantata_town.dantata_town.tests._helpers import (
+			get_test_expense_account,
+			ensure_site_preconditions,
+		)
 		self.expense_account = get_test_expense_account()
-		# Ensure setup preconditions for the new Data-field auto-create path.
-		if not frappe.db.exists("Item Group", "PROPERTIES"):
-			frappe.get_doc({
-				"doctype": "Item Group",
-				"item_group_name": "PROPERTIES",
-				"parent_item_group": "All Item Groups",
-				"is_group": 0,
-			}).insert(ignore_permissions=True)
-		if not frappe.db.exists("UOM", "Unit"):
-			frappe.get_doc({"doctype": "UOM", "uom_name": "Unit"}).insert(ignore_permissions=True)
+		ensure_site_preconditions()
 		self.template = "TPL Apartments"  # typed string, not an Item record
 
 	def _make_site(self, name=None):
@@ -133,17 +127,12 @@ class TestSiteAutoCreatesItems(FrappeTestCase):
 class TestItemReservedUnitSync(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
-		from dantata_town.dantata_town.tests._helpers import get_test_expense_account
+		from dantata_town.dantata_town.tests._helpers import (
+			get_test_expense_account,
+			ensure_site_preconditions,
+		)
 		self.expense_account = get_test_expense_account()
-		if not frappe.db.exists("Item Group", "PROPERTIES"):
-			frappe.get_doc({
-				"doctype": "Item Group",
-				"item_group_name": "PROPERTIES",
-				"parent_item_group": "All Item Groups",
-				"is_group": 0,
-			}).insert(ignore_permissions=True)
-		if not frappe.db.exists("UOM", "Unit"):
-			frappe.get_doc({"doctype": "UOM", "uom_name": "Unit"}).insert(ignore_permissions=True)
+		ensure_site_preconditions()
 		self.template = "TPL-Sync"
 
 	def test_item_doctype_has_reserved_unit_field(self):

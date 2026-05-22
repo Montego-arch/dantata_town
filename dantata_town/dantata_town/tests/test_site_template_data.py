@@ -6,25 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import flt
 
 from dantata_town.dantata_town.setup import create_boq_custom_fields
-from dantata_town.dantata_town.tests._helpers import get_test_expense_account
-
-
-def _ensure_item_group_properties():
-	if not frappe.db.exists("Item Group", "PROPERTIES"):
-		frappe.get_doc({
-			"doctype": "Item Group",
-			"item_group_name": "PROPERTIES",
-			"parent_item_group": "All Item Groups",
-			"is_group": 0,
-		}).insert(ignore_permissions=True)
-
-
-def _ensure_unit_uom():
-	if not frappe.db.exists("UOM", "Unit"):
-		frappe.get_doc({
-			"doctype": "UOM",
-			"uom_name": "Unit",
-		}).insert(ignore_permissions=True)
+from dantata_town.dantata_town.tests._helpers import get_test_expense_account, ensure_site_preconditions
 
 
 def _ensure_warehouse_stores_dtd():
@@ -39,8 +21,7 @@ def _ensure_warehouse_stores_dtd():
 class TestSiteAutoCreateDefaults(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
-		_ensure_item_group_properties()
-		_ensure_unit_uom()
+		ensure_site_preconditions()
 		self.expense_account = get_test_expense_account()
 		self.warehouse = _ensure_warehouse_stores_dtd()
 
@@ -112,4 +93,4 @@ class TestSiteAutoCreateDefaults(FrappeTestCase):
 				site.insert(ignore_permissions=True)
 			self.assertIn("PROPERTIES", str(cm.exception))
 		finally:
-			_ensure_item_group_properties()
+			ensure_site_preconditions()

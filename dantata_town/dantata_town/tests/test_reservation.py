@@ -6,11 +6,13 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import today, add_days
 
 from dantata_town.dantata_town.setup import create_boq_custom_fields
+from dantata_town.dantata_town.tests._helpers import ensure_site_preconditions
 
 
 class TestReservation(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
+		ensure_site_preconditions()
 		# Ensure a stable template item.
 		self.template = "TPL-Reserve"
 		if not frappe.db.exists("Item", self.template):
