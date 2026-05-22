@@ -75,3 +75,53 @@ def _validate_installment_inputs(doc):
 		frappe.throw(_("Installment Start Date is required for installment plans."))
 	if not doc.installment_months or int(doc.installment_months) < 1:
 		frappe.throw(_("Installment Months must be at least 1."))
+
+
+def check_sellable_cap(doc, method=None):
+	"""Block save when sum of qty across non-cancelled Quotation Items
+	(excluding this Quotation) plus this Quotation's qty would exceed the
+	Sellable cap on the matching Site row.
+
+	Quotation Items whose item_code is not a building_type on any Site row
+	are silently skipped (not site-tracked).
+	"""
+	this_qty: dict[str, float] = {}
+	for row in doc.items:
+		this_qty[row.item_code] = this_qty.get(row.item_code, 0) + flt(row.qty)
+
+	for item_code, qty_on_this in this_qty.items():
+		site_row = frappe.db.sql(
+			"""
+			select parent as site, sellable_unit
+			from `tabProject Unit Item`
+			where parenttype = 'Site' and building_type = %s
+			limit 1
+			""",
+			(item_code,),
+			as_dict=True,
+		)
+		if not site_row:
+			continue
+		cap = flt(site_row[0].sellable_unit)
+
+		other = frappe.db.sql(
+			"""
+			select coalesce(sum(qi.qty), 0)
+			from `tabQuotation Item` qi
+			join `tabQuotation` q on q.name = qi.parent
+			where q.docstatus != 2
+			  and q.name != %s
+			  and qi.item_code = %s
+			""",
+			(doc.name or "", item_code),
+		)
+		other_qty = flt(other[0][0] if other else 0)
+
+		if (other_qty + qty_on_this) > cap:
+			available = cap - other_qty
+			frappe.throw(_(
+				"Cannot quote {0} of {1}: only {2} sellable on {3} "
+				"(already on other quotations: {4})."
+			).format(
+				qty_on_this, item_code, available, site_row[0].site, other_qty
+			))

@@ -155,7 +155,10 @@ doc_events = {
 		],
 	},
 	"Quotation": {
-		"validate": "dantata_town.dantata_town.quotation.validate_quotation_payment_type",
+		"validate": [
+			"dantata_town.dantata_town.quotation.validate_quotation_payment_type",
+			"dantata_town.dantata_town.quotation.check_sellable_cap",
+		],
 	},
 	"Purchase Receipt": {
 		"on_submit": "dantata_town.dantata_town.utils.update_boq_consumed_qty",
