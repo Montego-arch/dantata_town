@@ -93,10 +93,18 @@ def _create_custom_fields():
 				"module": "Dantata Town",
 			},
 			{
+				"fieldname": "sales_order_amount",
+				"fieldtype": "Currency",
+				"label": "Sales Order Amount",
+				"insert_after": "dt_financials_section",
+				"read_only": 1,
+				"module": "Dantata Town",
+			},
+			{
 				"fieldname": "project_expenses",
 				"fieldtype": "Currency",
 				"label": "Project Expenses",
-				"insert_after": "dt_financials_section",
+				"insert_after": "sales_order_amount",
 				"read_only": 1,
 				"module": "Dantata Town",
 			},
@@ -320,7 +328,7 @@ def _create_property_setters():
 		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
 		("Payment Schedule", "paid_amount", "in_list_view", "1", "Check"),
 		("Payment Schedule", "outstanding", "in_list_view", "1", "Check"),
-		("Project", "total_sales_amount", "hidden", "0", "Check"),
+		("Project", "total_sales_amount", "hidden", "1", "Check"),
 		("Project", "total_sales_amount", "label", "Sales Order Amount", "Data"),
 		("Project", "project_name", "unique", "0", "Check"),
 	]

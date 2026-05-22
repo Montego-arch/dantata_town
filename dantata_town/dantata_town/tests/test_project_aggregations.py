@@ -45,20 +45,26 @@ class TestProjectFinancialFields(FrappeTestCase):
 			if fieldtype == "Currency":
 				self.assertEqual(field.read_only, 1)
 
-	def test_total_sales_amount_relabeled_and_unhidden(self):
+	def test_sales_order_amount_custom_field_exists(self):
 		create_boq_custom_fields()
-		label = frappe.db.get_value(
-			"Property Setter",
-			{"doc_type": "Project", "field_name": "total_sales_amount", "property": "label"},
-			"value",
+		field = frappe.db.get_value(
+			"Custom Field",
+			{"dt": "Project", "fieldname": "sales_order_amount"},
+			["fieldtype", "label", "read_only", "insert_after"],
+			as_dict=True,
 		)
+		self.assertIsNotNone(field, "sales_order_amount custom field not found")
+		self.assertEqual(field.fieldtype, "Currency")
+		self.assertEqual(field.label, "Sales Order Amount")
+		self.assertEqual(field.read_only, 1)
+		self.assertEqual(field.insert_after, "dt_financials_section")
+		# Confirm the native ERPNext core field is now hidden via property setter.
 		hidden = frappe.db.get_value(
 			"Property Setter",
 			{"doc_type": "Project", "field_name": "total_sales_amount", "property": "hidden"},
 			"value",
 		)
-		self.assertEqual(label, "Sales Order Amount")
-		self.assertEqual(hidden, "0")
+		self.assertEqual(hidden, "1")
 
 
 def _ensure_company():
@@ -628,12 +634,20 @@ class TestSalesOrderAmountRecompute(FrappeTestCase):
 			flt(frappe.db.get_value("Project", project, "total_sales_amount")),
 			2_500_000,
 		)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project, "sales_order_amount")),
+			2_500_000,
+		)
 
 	def test_so_cancel_zeros_total_sales_amount(self):
 		_, project, so_name = self._make_site_project_and_so(qty=1, rate=1_500_000)
 		frappe.get_doc("Sales Order", so_name).cancel()
 		self.assertEqual(
 			flt(frappe.db.get_value("Project", project, "total_sales_amount")),
+			0,
+		)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project, "sales_order_amount")),
 			0,
 		)
 

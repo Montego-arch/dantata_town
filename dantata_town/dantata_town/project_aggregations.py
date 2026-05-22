@@ -34,6 +34,7 @@ def recalc_project_totals(project: str | None) -> None:
 			"project_expenses": expenses,
 			"project_payment": payment,
 			"total_sales_amount": sales,
+			"sales_order_amount": sales,
 		},
 		update_modified=False,
 	)
