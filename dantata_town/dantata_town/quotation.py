@@ -92,7 +92,7 @@ def check_sellable_cap(doc, method=None):
 	for item_code, qty_on_this in this_qty.items():
 		site_row = frappe.db.sql(
 			"""
-			select parent as site, sellable_unit
+			select parent as site, unit, reserved_unit
 			from `tabProject Unit Item`
 			where parenttype = 'Site' and building_type = %s
 			limit 1
@@ -102,8 +102,11 @@ def check_sellable_cap(doc, method=None):
 		)
 		if not site_row:
 			continue
-		cap = flt(site_row[0].sellable_unit)
+		cap = flt(site_row[0].unit) - flt(site_row[0].reserved_unit)
 
+		# Counts both draft (0) and submitted (1) quotations against the cap.
+		# Cancelled (2) is excluded. This was an explicit design choice — drafts
+		# consume capacity so concurrent users can't over-allocate the same units.
 		other = frappe.db.sql(
 			"""
 			select coalesce(sum(qi.qty), 0)

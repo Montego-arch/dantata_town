@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import flt, today
+from frappe.utils import add_days, flt, today
 
 from dantata_town.dantata_town.setup import create_boq_custom_fields
 from dantata_town.dantata_town.tests._helpers import (
@@ -36,7 +36,7 @@ def _make_quotation(item_code, qty, save=True, submit=False):
 		"quotation_to": "Customer",
 		"party_name": customer,
 		"transaction_date": today(),
-		"valid_till": today(),
+		"valid_till": add_days(today(), 30),
 		"payment_type": "Outright",
 		"items": [{
 			"item_code": item_code,
