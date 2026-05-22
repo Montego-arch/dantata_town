@@ -153,6 +153,7 @@ doc_events = {
 			"dantata_town.dantata_town.utils.validate_project_has_site",
 			"dantata_town.dantata_town.utils.validate_project_subtype_matches_type",
 		],
+		"on_update": "dantata_town.dantata_town.project.auto_link_orphan_sales_orders",
 	},
 	"Quotation": {
 		"validate": [

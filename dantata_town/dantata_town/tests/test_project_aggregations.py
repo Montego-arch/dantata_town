@@ -748,3 +748,108 @@ class TestProjectCompletion(FrappeTestCase):
 		# After insert (which calls validate), completion should still be 100.
 		value = frappe.db.get_value("Project", project, "project_completion_percent")
 		self.assertEqual(flt(value), 100.0)
+
+
+class TestAutoLinkOrphanSO(FrappeTestCase):
+	def setUp(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.tests._helpers import (
+			get_test_expense_account,
+			ensure_site_preconditions,
+		)
+		self.expense_account = get_test_expense_account()
+		ensure_site_preconditions()
+
+	def _make_site(self, template="AutoLink"):
+		return frappe.get_doc({
+			"doctype": "Site",
+			"site_name": f"LinkSite-{frappe.generate_hash(length=6)}",
+			"expense_account": self.expense_account,
+			"project_units": [{
+				"template_item": template,
+				"unit": 10,
+				"uom": "Unit",
+				"rate": 1000000,
+			}],
+		}).insert(ignore_permissions=True)
+
+	def _submit_orphan_so(self, site_doc, qty=1, rate=1_000_000):
+		"""Submit an SO citing the Site's per-site Item with NO project link."""
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		cost_center = frappe.db.get_value(
+			"Cost Center", {"company": company, "is_group": 0}, "name"
+		)
+		per_site_item = site_doc.project_units[0].building_type
+		so = frappe.get_doc({
+			"doctype": "Sales Order",
+			"customer": customer,
+			"company": company,
+			"transaction_date": today(),
+			"delivery_date": add_days(today(), 7),
+			# cost_center is mandatory on this site via a Property Setter; harmless on fresh sites.
+			"cost_center": cost_center,
+			"items": [{
+				"item_code": per_site_item,
+				"qty": qty,
+				"rate": rate,
+				"delivery_date": add_days(today(), 7),
+				"cost_center": cost_center,
+			}],
+		})
+		so.set_missing_values()
+		so.insert(ignore_permissions=True)
+		so.submit()
+		return so.name
+
+	def _make_project(self, site_name):
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		return frappe.get_doc({
+			"doctype": "Project",
+			"project_name": f"LinkProj-{frappe.generate_hash(length=6)}",
+			"customer": customer,
+			"company": company,
+			"site": site_name,
+			"project_type": "Building",
+			"project_subtype": "PLOT",
+		}).insert(ignore_permissions=True)
+
+	def test_single_orphan_so_gets_linked_on_project_save(self):
+		site = self._make_site("AutoLink-Solo")
+		so_name = self._submit_orphan_so(site, qty=1, rate=1_500_000)
+		project = self._make_project(site.name)
+		self.assertEqual(
+			frappe.db.get_value("Sales Order", so_name, "project"),
+			project.name,
+		)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "total_sales_amount")),
+			1_500_000,
+		)
+		# Also verify sales_order_amount custom field gets populated
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			1_500_000,
+		)
+
+	def test_multiple_orphans_throw_on_project_save(self):
+		site = self._make_site("AutoLink-Multi")
+		so_a = self._submit_orphan_so(site, qty=1, rate=1_000_000)
+		so_b = self._submit_orphan_so(site, qty=1, rate=2_000_000)
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._make_project(site.name)
+		msg = str(cm.exception)
+		self.assertIn(so_a, msg)
+		self.assertIn(so_b, msg)
+
+	def test_orphan_on_different_site_is_not_linked(self):
+		site_a = self._make_site("AutoLink-A")
+		site_b = self._make_site("AutoLink-B")
+		so_a = self._submit_orphan_so(site_a, qty=1, rate=1_000_000)
+		project_b = self._make_project(site_b.name)
+		self.assertIsNone(frappe.db.get_value("Sales Order", so_a, "project"))
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project_b.name, "total_sales_amount")),
+			0,
+		)
