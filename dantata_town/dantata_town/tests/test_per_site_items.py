@@ -14,9 +14,19 @@ class TestProjectUnitItemSchema(FrappeTestCase):
 		fieldnames = {f.fieldname for f in meta.fields}
 		self.assertIn("template_item", fieldnames)
 		template = next(f for f in meta.fields if f.fieldname == "template_item")
-		self.assertEqual(template.fieldtype, "Link")
-		self.assertEqual(template.options, "Item")
+		self.assertEqual(template.fieldtype, "Data")
 		self.assertEqual(template.reqd, 1)
+		self.assertEqual(template.label, "Template Item")
+
+	def test_sellable_unit_field_exists(self):
+		meta = frappe.get_meta("Project Unit Item")
+		fieldnames = {f.fieldname for f in meta.fields}
+		self.assertIn("sellable_unit", fieldnames)
+		sellable = next(f for f in meta.fields if f.fieldname == "sellable_unit")
+		self.assertEqual(sellable.fieldtype, "Float")
+		self.assertEqual(sellable.read_only, 1)
+		self.assertEqual(sellable.label, "Sellable")
+		self.assertEqual(sellable.in_list_view, 1)
 
 	def test_reserved_unit_field_exists(self):
 		meta = frappe.get_meta("Project Unit Item")
