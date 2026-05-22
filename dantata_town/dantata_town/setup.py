@@ -328,6 +328,11 @@ def _create_property_setters():
 		("Payment Schedule", "invoice_portion", "in_list_view", "0", "Check"),
 		("Payment Schedule", "paid_amount", "in_list_view", "1", "Check"),
 		("Payment Schedule", "outstanding", "in_list_view", "1", "Check"),
+		# total_sales_amount is hidden because Frappe's insert_after Property Setter
+		# does not reliably reposition core ERPNext fields. The custom field
+		# `sales_order_amount` (see _create_custom_fields) is the UI-visible mirror
+		# in the Financials section. Both fields stay in sync via recalc_project_totals.
+		# The label setter is kept so the field reads correctly if ever un-hidden.
 		("Project", "total_sales_amount", "hidden", "1", "Check"),
 		("Project", "total_sales_amount", "label", "Sales Order Amount", "Data"),
 		("Project", "project_name", "unique", "0", "Check"),

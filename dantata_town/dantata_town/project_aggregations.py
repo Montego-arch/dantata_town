@@ -8,7 +8,15 @@ from frappe.utils import flt
 
 
 def recalc_project_totals(project: str | None) -> None:
-	"""Recompute project_expenses, project_payment, and total_sales_amount from submitted docs.
+	"""Recompute project_expenses, project_payment, total_sales_amount, and
+	sales_order_amount from submitted docs.
+
+	Both total_sales_amount (core ERPNext field, hidden via Property Setter) and
+	sales_order_amount (custom field in the Financials section) are written with
+	the same value. The native field is kept in sync so ERPNext internals that
+	read it remain accurate; sales_order_amount is the UI-visible mirror because
+	Frappe's insert_after Property Setter does not reliably reposition core
+	fields in the form layout.
 
 	Re-sums from docstatus=1 rows so cancellation/amendment is naturally consistent.
 	No-op if project is falsy or does not exist.
