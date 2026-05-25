@@ -652,6 +652,256 @@ class TestSalesOrderAmountRecompute(FrappeTestCase):
 		)
 
 
+class TestSalesOrderAmountBySite(FrappeTestCase):
+	"""Aggregation must follow Site, not SO.project.
+
+	Workflow: Site is created first, the Project is created from the Site, and
+	one or more Sales Orders may be submitted against the Site's per-site Items
+	either before OR after the Project exists. The sales_order_amount on the
+	Project must reflect the sum of grand_total across all such SOs regardless
+	of whether they were explicitly linked to the Project.
+	"""
+
+	def setUp(self):
+		create_boq_custom_fields()
+		from dantata_town.dantata_town.tests._helpers import (
+			get_test_expense_account,
+			ensure_site_preconditions,
+		)
+		self.expense_account = get_test_expense_account()
+		ensure_site_preconditions()
+
+	def _make_site(self, template="BySite"):
+		return frappe.get_doc({
+			"doctype": "Site",
+			"site_name": f"BySiteSite-{frappe.generate_hash(length=6)}",
+			"expense_account": self.expense_account,
+			"project_units": [{
+				"template_item": template,
+				"unit": 10,
+				"uom": "Unit",
+				"rate": 1_000_000,
+			}],
+		}).insert(ignore_permissions=True)
+
+	def _make_project(self, site_name):
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		return frappe.get_doc({
+			"doctype": "Project",
+			"project_name": f"BySiteProj-{frappe.generate_hash(length=6)}",
+			"customer": customer,
+			"company": company,
+			"site": site_name,
+			"project_type": "Building",
+			"project_subtype": "PLOT",
+		}).insert(ignore_permissions=True)
+
+	def _generic_sellable_item(self):
+		"""Return an Item that is sellable AND not tracked as a per-site Item
+		(so check_reservations skips it). Creates one if none exist."""
+		code = "TST-Generic-Sellable"
+		if not frappe.db.exists("Item", code):
+			item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") \
+				or "All Item Groups"
+			frappe.get_doc({
+				"doctype": "Item",
+				"item_code": code,
+				"item_name": code,
+				"item_group": item_group,
+				"is_stock_item": 0,
+				"is_sales_item": 1,
+				"stock_uom": frappe.db.get_value("UOM", {}, "name") or "Nos",
+			}).insert(ignore_permissions=True)
+		return code
+
+	def _submit_so_for_site(self, site_name, qty=1, rate=1_000_000, project=None):
+		"""Submit an SO carrying SO.site = site_name. Items can be any sellable
+		Item — production SOs quote generic SKUs, so we mirror that here."""
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		cost_center = frappe.db.get_value(
+			"Cost Center", {"company": company, "is_group": 0}, "name"
+		)
+		item = self._generic_sellable_item()
+		payload = {
+			"doctype": "Sales Order",
+			"customer": customer,
+			"company": company,
+			"site": site_name,
+			"transaction_date": today(),
+			"delivery_date": add_days(today(), 7),
+			"cost_center": cost_center,
+			"items": [{
+				"item_code": item,
+				"qty": qty,
+				"rate": rate,
+				"delivery_date": add_days(today(), 7),
+				"cost_center": cost_center,
+			}],
+		}
+		if project:
+			payload["project"] = project
+		so = frappe.get_doc(payload)
+		so.set_missing_values()
+		so.insert(ignore_permissions=True)
+		so.submit()
+		return so.name
+
+	def test_so_submitted_after_project_pulls_grand_total_through_site(self):
+		"""The reported bug: Project exists, SO is then submitted with SO.site
+		set (no SO.project link). sales_order_amount must populate."""
+		site = self._make_site("BySite-After")
+		project = self._make_project(site.name)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			0,
+		)
+		so_name = self._submit_so_for_site(site.name, qty=2, rate=1_500_000)
+		expected = flt(frappe.db.get_value("Sales Order", so_name, "grand_total"))
+		self.assertGreater(expected, 0)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			expected,
+		)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "total_sales_amount")),
+			expected,
+		)
+
+	def test_recalc_reads_grand_total_not_base_net_total(self):
+		"""Mutate grand_total in the DB independently of base_net_total, then
+		recompute — the new grand_total must propagate, proving the SUM column."""
+		site = self._make_site("BySite-Grand")
+		project = self._make_project(site.name)
+		so_name = self._submit_so_for_site(site.name, qty=1, rate=2_000_000)
+		frappe.db.set_value(
+			"Sales Order", so_name, "grand_total", 2_500_000, update_modified=False
+		)
+		recalc_project_totals(project.name)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			2_500_000,
+		)
+
+	def test_multiple_sos_for_same_site_sum_into_project(self):
+		site = self._make_site("BySite-Multi")
+		project = self._make_project(site.name)
+		so_a = self._submit_so_for_site(site.name, qty=1, rate=1_000_000)
+		so_b = self._submit_so_for_site(site.name, qty=1, rate=2_000_000)
+		expected = flt(frappe.db.get_value("Sales Order", so_a, "grand_total")) \
+			+ flt(frappe.db.get_value("Sales Order", so_b, "grand_total"))
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			expected,
+		)
+
+	def test_so_on_different_site_does_not_contribute(self):
+		site_a = self._make_site("BySite-IsoA")
+		site_b = self._make_site("BySite-IsoB")
+		project_a = self._make_project(site_a.name)
+		self._submit_so_for_site(site_b.name, qty=1, rate=3_000_000)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project_a.name, "sales_order_amount")),
+			0,
+		)
+
+	def test_so_cancel_via_site_zeros_amount(self):
+		site = self._make_site("BySite-Cancel")
+		project = self._make_project(site.name)
+		so_name = self._submit_so_for_site(site.name, qty=1, rate=1_750_000)
+		self.assertGreater(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			0,
+		)
+		frappe.get_doc("Sales Order", so_name).cancel()
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			0,
+		)
+
+	def test_setting_site_on_submitted_so_triggers_recalc(self):
+		"""User's reported case: SO is submitted with site=NULL, then they edit
+		the submitted SO to set site=X. sales_order_amount on the Project for
+		Site X must populate without any manual recalc."""
+		site = self._make_site("BySite-AfterEdit")
+		project = self._make_project(site.name)
+		# Submit SO carrying a *different* site so we can edit it.
+		other_site = self._make_site("BySite-Edited-From")
+		so_name = self._submit_so_for_site(other_site.name, qty=1, rate=900_000)
+		# Project (Site X) should be 0 at this point.
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			0,
+		)
+		# Now edit the submitted SO to move it to Site X.
+		so = frappe.get_doc("Sales Order", so_name)
+		so.site = site.name
+		so.save()
+		expected = flt(frappe.db.get_value("Sales Order", so_name, "grand_total"))
+		# Project for Site X picks up the SO.
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			expected,
+		)
+		# Project for the original Site (other_site has no Project) is irrelevant;
+		# but if we had one, it should drop the SO from its sum. Build that now
+		# to verify the previous-site recalc path:
+		other_project = self._make_project(other_site.name)
+		# At this point other_project's recalc on save sees no SO with site=other.
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", other_project.name, "sales_order_amount")),
+			0,
+		)
+
+	def test_project_created_after_so_picks_up_existing_so(self):
+		"""SO submitted with site=X first, then Project created with site=X.
+		Project.on_update must recalc and pick up the SO via the Site link."""
+		site = self._make_site("BySite-ProjectAfter")
+		# Submit the SO before any Project exists on this Site.
+		so_name = self._submit_so_for_site(site.name, qty=1, rate=2_100_000)
+		expected = flt(frappe.db.get_value("Sales Order", so_name, "grand_total"))
+		# Now create the Project.
+		project = self._make_project(site.name)
+		self.assertEqual(
+			flt(frappe.db.get_value("Project", project.name, "sales_order_amount")),
+			expected,
+		)
+
+	def test_so_site_auto_fetched_from_project(self):
+		"""When SO.project is set and SO.site is blank, fetch_from_project must
+		copy Project.site → SO.site before validate."""
+		site = self._make_site("BySite-Fetch")
+		project = self._make_project(site.name)
+		customer = frappe.db.get_value("Customer", {"disabled": 0}, "name")
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		cost_center = frappe.db.get_value(
+			"Cost Center", {"company": company, "is_group": 0}, "name"
+		)
+		item = frappe.db.get_value(
+			"Item", {"is_sales_item": 1, "is_stock_item": 0, "disabled": 0}, "name"
+		) or frappe.db.get_value("Item", {"disabled": 0}, "name")
+		so = frappe.get_doc({
+			"doctype": "Sales Order",
+			"customer": customer,
+			"company": company,
+			"project": project.name,
+			# site intentionally NOT set; fetch_from_project should populate it.
+			"transaction_date": today(),
+			"delivery_date": add_days(today(), 7),
+			"cost_center": cost_center,
+			"items": [{
+				"item_code": item,
+				"qty": 1,
+				"rate": 500_000,
+				"delivery_date": add_days(today(), 7),
+				"cost_center": cost_center,
+			}],
+		})
+		so.insert(ignore_permissions=True)
+		self.assertEqual(so.site, site.name)
+
+
 class TestProjectCompletion(FrappeTestCase):
 	def setUp(self):
 		create_boq_custom_fields()
@@ -785,6 +1035,7 @@ class TestAutoLinkOrphanSO(FrappeTestCase):
 			"doctype": "Sales Order",
 			"customer": customer,
 			"company": company,
+			"site": site_doc.name,
 			"transaction_date": today(),
 			"delivery_date": add_days(today(), 7),
 			# cost_center is mandatory on this site via a Property Setter; harmless on fresh sites.

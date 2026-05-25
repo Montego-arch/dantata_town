@@ -233,6 +233,22 @@ def _create_custom_fields():
 				"module": "Dantata Town",
 			},
 		],
+		"Sales Order": [
+			{
+				"fieldname": "site",
+				"fieldtype": "Link",
+				"label": "Site",
+				"options": "Site",
+				"insert_after": "project",
+				"reqd": 1,
+				# Submitted-doc editing is allowed so users can backfill the
+				# Site on historical SOs that pre-date this field. The
+				# on_update_after_submit hook re-rolls totals on both the
+				# previous and current Site's Project.
+				"allow_on_submit": 1,
+				"module": "Dantata Town",
+			},
+		],
 	}
 
 	# Per-stage tracking fields on Bill of Quantities (× 15 stages)

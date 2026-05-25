@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 dantata_town.patches.rename_project_unit_item_fields
 dantata_town.patches.recalc_sales_amount_for_existing_projects
+dantata_town.patches.recalc_sales_amount_grand_total_via_site

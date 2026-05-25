@@ -91,8 +91,32 @@ def _projects_touched_by(doc) -> Iterable[str]:
 			if project:
 				projects.add(project)
 	elif dt == "Sales Order":
+		# Collect current AND previous site/project — when a submitted SO is
+		# edited (e.g., site changed from A to B), both the old Project (which
+		# loses this SO from its sum) and the new Project (which gains it) must
+		# recalc. doc.get_doc_before_save() returns the pre-edit snapshot.
+		sites: set[str] = set()
+		direct_projects: set[str] = set()
+		if doc.get("site"):
+			sites.add(doc.site)
 		if doc.get("project"):
-			projects.add(doc.project)
+			direct_projects.add(doc.project)
+		try:
+			before = doc.get_doc_before_save()
+		except Exception:
+			before = None
+		if before is not None:
+			if before.get("site"):
+				sites.add(before.site)
+			if before.get("project"):
+				direct_projects.add(before.project)
+		projects.update(direct_projects)
+		for site in sites:
+			for name in frappe.db.sql_list(
+				"select name from `tabProject` where site = %s",
+				(site,),
+			):
+				projects.add(name)
 	return projects
 
 
@@ -188,17 +212,43 @@ def _sum_payment_entry_references(project: str) -> float:
 
 
 def _sum_sales_orders(project: str) -> float:
-	# base_net_total (not net_total or grand_total) is Company Currency post-discount;
-	# matches ERPNext core's own Project.update_sales_amount and is safe for multi-currency SOs.
-	rows = frappe.db.sql(
-		"""
-		select sum(base_net_total) as total
-		from `tabSales Order`
-		where project = %s and docstatus = 1
-		""",
-		(project,),
-		as_dict=True,
-	)
+	"""Sum grand_total across submitted SOs that belong to this Project.
+
+	A Sales Order belongs to a Project when EITHER:
+	  (a) SO.project is set directly to the Project, OR
+	  (b) The Project has a Site and SO.site = Project.site.
+
+	(b) is the dominant path in practice — the workflow is Site → SO → Project,
+	so SOs are usually submitted before the Project exists and SO.project is
+	NULL. Aggregating by SO.site sidesteps the need for an after-the-fact link.
+	(a) remains as a fallback for SOs that carry only the project link.
+
+	grand_total (not base_net_total / net_total) is the customer-facing amount
+	including taxes, additional discount, and shipping — matches what the user
+	sees on the SO form.
+	"""
+	site = frappe.db.get_value("Project", project, "site")
+	if site:
+		rows = frappe.db.sql(
+			"""
+			select sum(grand_total) as total
+			from `tabSales Order`
+			where docstatus = 1
+			  and (site = %(site)s or project = %(project)s)
+			""",
+			{"project": project, "site": site},
+			as_dict=True,
+		)
+	else:
+		rows = frappe.db.sql(
+			"""
+			select sum(grand_total) as total
+			from `tabSales Order`
+			where project = %s and docstatus = 1
+			""",
+			(project,),
+			as_dict=True,
+		)
 	return flt(rows[0].total) if rows else 0
 
 

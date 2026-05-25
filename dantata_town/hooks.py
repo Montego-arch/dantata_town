@@ -214,6 +214,10 @@ doc_events = {
 		],
 		"on_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
 		"on_cancel": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
+		# Editing a submitted SO (e.g., setting site for the first time, or
+		# changing site/project) must re-roll the totals on every affected
+		# Project — both the previous Site/Project and the current one.
+		"on_update_after_submit": "dantata_town.dantata_town.project_aggregations.recalc_for_doc",
 	},
 }
 

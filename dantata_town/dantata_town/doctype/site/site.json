@@ -82,6 +82,10 @@
   {
    "link_doctype": "Bill of Quantities",
    "link_fieldname": "site"
+  },
+  {
+   "link_doctype": "Sales Order",
+   "link_fieldname": "site"
   }
  ],
  "modified": "2026-04-05 13:21:30.343647",

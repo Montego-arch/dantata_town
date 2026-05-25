@@ -7,16 +7,22 @@ from frappe.utils import flt
 
 
 def fetch_from_project(doc, method=None):
-	"""When SO.project is set and SO.customer is blank, copy customer from Project.
+	"""When SO.project is set, copy missing fields from the Project:
+	  - customer (required by ERPNext core validate when blank)
+	  - site (so the Project↔Site rollup catches this SO even before submit)
 
-	Hooked on `before_validate` so the customer is populated before ERPNext core's
-	`validate` runs (which requires customer to be set).
+	Hooked on `before_validate` so values are populated before ERPNext core's
+	`validate` runs.
 	"""
-	if not doc.project or doc.customer:
+	if not doc.project:
 		return
-	customer = frappe.db.get_value("Project", doc.project, "customer")
-	if customer:
-		doc.customer = customer
+	project_fields = frappe.db.get_value(
+		"Project", doc.project, ["customer", "site"], as_dict=True
+	) or {}
+	if not doc.customer and project_fields.get("customer"):
+		doc.customer = project_fields.customer
+	if not doc.get("site") and project_fields.get("site"):
+		doc.site = project_fields.site
 
 
 def enforce_one_so_per_project(doc, method=None):
