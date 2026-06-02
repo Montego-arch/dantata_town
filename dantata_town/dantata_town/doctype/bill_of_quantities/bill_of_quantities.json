@@ -73,6 +73,26 @@
   "stage_15",
   "description15",
   "stage_15_summary",
+  "section_break_stage16",
+  "stage_16",
+  "description16",
+  "stage_16_summary",
+  "section_break_stage17",
+  "stage_17",
+  "description17",
+  "stage_17_summary",
+  "section_break_stage18",
+  "stage_18",
+  "description18",
+  "stage_18_summary",
+  "section_break_stage19",
+  "stage_19",
+  "description19",
+  "stage_19_summary",
+  "section_break_stage20",
+  "stage_20",
+  "description20",
+  "stage_20_summary",
   "section_break_lkvv",
   "summary"
  ],
@@ -484,6 +504,126 @@
    "fieldname": "stage_15_summary",
    "fieldtype": "Table",
    "label": "Stage 15 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_stage16",
+   "fieldtype": "Section Break",
+   "label": "Stage 16"
+  },
+  {
+   "fieldname": "stage_16",
+   "fieldtype": "Data",
+   "label": "Stage 16"
+  },
+  {
+   "fieldname": "description16",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "stage_16_summary",
+   "fieldtype": "Table",
+   "label": "Stage 16 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_stage17",
+   "fieldtype": "Section Break",
+   "label": "Stage 17"
+  },
+  {
+   "fieldname": "stage_17",
+   "fieldtype": "Data",
+   "label": "Stage 17"
+  },
+  {
+   "fieldname": "description17",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "stage_17_summary",
+   "fieldtype": "Table",
+   "label": "Stage 17 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_stage18",
+   "fieldtype": "Section Break",
+   "label": "Stage 18"
+  },
+  {
+   "fieldname": "stage_18",
+   "fieldtype": "Data",
+   "label": "Stage 18"
+  },
+  {
+   "fieldname": "description18",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "stage_18_summary",
+   "fieldtype": "Table",
+   "label": "Stage 18 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_stage19",
+   "fieldtype": "Section Break",
+   "label": "Stage 19"
+  },
+  {
+   "fieldname": "stage_19",
+   "fieldtype": "Data",
+   "label": "Stage 19"
+  },
+  {
+   "fieldname": "description19",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "stage_19_summary",
+   "fieldtype": "Table",
+   "label": "Stage 19 Summary",
+   "options": "BOQ Summary Item",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_stage20",
+   "fieldtype": "Section Break",
+   "label": "Stage 20"
+  },
+  {
+   "fieldname": "stage_20",
+   "fieldtype": "Data",
+   "label": "Stage 20"
+  },
+  {
+   "fieldname": "description20",
+   "fieldtype": "Table",
+   "label": "Description",
+   "options": "BOQ Items"
+  },
+  {
+   "fieldname": "stage_20_summary",
+   "fieldtype": "Table",
+   "label": "Stage 20 Summary",
    "options": "BOQ Summary Item",
    "read_only": 1
   },

@@ -29,7 +29,7 @@ class TestBOQStageFieldsInstalled(FrappeTestCase):
 
 	def test_per_stage_fields_exist(self):
 		create_boq_custom_fields()
-		for stage in range(1, 16):
+		for stage in range(1, 21):
 			# All 5 are allow_on_submit=1: dates so the user can edit them
 			# post-submit; duration/progress/status so server-computed updates
 			# can persist on the auto-save fired by toggling line-item completed.
@@ -198,13 +198,13 @@ class TestValidateStageDates(FrappeTestCase):
 
 
 class TestStageTables(FrappeTestCase):
-	def test_stage_tables_covers_1_to_15(self):
-		"""STAGE_TABLES must include 15 stages with consistent fieldname pattern."""
-		self.assertEqual(set(STAGE_TABLES.keys()), set(range(1, 16)))
-		# Stages 2-15 should follow the `descriptionN` naming convention.
+	def test_stage_tables_covers_1_to_20(self):
+		"""STAGE_TABLES must include 20 stages with consistent fieldname pattern."""
+		self.assertEqual(set(STAGE_TABLES.keys()), set(range(1, 21)))
+		# Stages 2-20 should follow the `descriptionN` naming convention.
 		# Stage 1 keeps the legacy `table_txao` for backward compat.
 		self.assertEqual(STAGE_TABLES[1], "table_txao")
-		for n in range(2, 16):
+		for n in range(2, 21):
 			self.assertEqual(STAGE_TABLES[n], f"description{n}")
 
 

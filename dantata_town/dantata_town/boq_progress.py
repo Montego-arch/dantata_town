@@ -24,6 +24,11 @@ STAGE_TABLES = {
 	13: "description13",
 	14: "description14",
 	15: "description15",
+	16: "description16",
+	17: "description17",
+	18: "description18",
+	19: "description19",
+	20: "description20",
 }
 
 
