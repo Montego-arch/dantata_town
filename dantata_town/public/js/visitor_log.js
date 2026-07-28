@@ -1,6 +1,6 @@
 frappe.ui.form.on("Visitor Log", {
 	refresh(frm) {
-		if (frm.is_new() || frm.doc.time_out) {
+		if (frm.doc.docstatus !== 1 || frm.doc.time_out) {
 			return;
 		}
 

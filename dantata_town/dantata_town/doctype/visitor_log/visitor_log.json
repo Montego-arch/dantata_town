@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_visitor",
+  "amended_from",
   "visitor_name",
   "phone_number",
   "address",
@@ -24,6 +25,16 @@
    "fieldname": "section_break_visitor",
    "fieldtype": "Section Break",
    "label": "Visitor"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Visitor Log",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "visitor_name",
@@ -92,6 +103,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "time_out",
    "fieldtype": "Time",
    "in_list_view": 1,
@@ -100,8 +112,9 @@
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-07-28 15:00:00.000000",
+ "modified": "2026-07-28 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Dantata Town",
  "name": "Visitor Log",
@@ -109,6 +122,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -118,6 +133,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
@@ -129,6 +145,7 @@
    "report": 1,
    "role": "Visitor Log User",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],

@@ -11,7 +11,7 @@ class TestVisitorLog(FrappeTestCase):
 	def setUp(self):
 		self.employee = ensure_test_employee()
 
-	def _log(self, **overrides):
+	def _log(self, submit=True, **overrides):
 		doc = frappe.get_doc({
 			"doctype": "Visitor Log",
 			"visitor_name": "Amina Yusuf",
@@ -22,15 +22,17 @@ class TestVisitorLog(FrappeTestCase):
 			**overrides,
 		})
 		doc.insert(ignore_permissions=True)
+		if submit:
+			doc.submit()
 		return doc
 
 	def test_insert_stamps_time_in_and_leaves_visitor_on_site(self):
-		doc = self._log()
+		doc = self._log(submit=False)
 
 		self.assertTrue(doc.time_in)
 		self.assertFalse(doc.time_out)
 
-	def test_check_out_records_time_out(self):
+	def test_check_out_records_time_out_on_a_submitted_visit(self):
 		doc = self._log()
 
 		doc.check_out()
@@ -44,9 +46,18 @@ class TestVisitorLog(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.check_out()
 
+	def test_checking_out_a_visit_that_was_never_submitted_is_rejected(self):
+		doc = self._log(submit=False)
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.check_out()
+
 	def test_time_out_earlier_than_time_in_is_rejected(self):
-		doc = self._log()
+		doc = self._log(submit=False)
 		doc.time_in = "14:00:00"
+		doc.save(ignore_permissions=True)
+		doc.submit()
+
 		doc.time_out = "13:00:00"
 
 		with self.assertRaises(frappe.ValidationError):

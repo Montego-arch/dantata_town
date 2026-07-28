@@ -30,13 +30,16 @@ The SoW field list omits the visitor's name. A log recording an address and phon
 
 ### 1. Doctype: `Visitor Log`
 
-Module **Dantata Town**. Not submittable — a log book, not a transaction. `allow_rename: 0`, `track_changes: 1`, `autoname: "VLOG-.YYYY.-.#####"` with `naming_rule: "Expression (old style)"`, `sort_field: "modified"`, `sort_order: "DESC"`.
+Module **Dantata Town**. `is_submittable: 1`, `allow_rename: 0`, `track_changes: 1`, `autoname: "VLOG-.YYYY.-.#####"` with `naming_rule: "Expression (old style)"`, `sort_field: "modified"`, `sort_order: "DESC"`.
+
+Submit marks the visitor as checked in and freezes the record. `time_out` is the only field with `allow_on_submit: 1`, so after submission the visitor's name, phone, address, host, purpose and arrival time cannot be altered — the front desk can record a departure and nothing else. A mistaken entry is cancelled and amended, leaving a trail, rather than quietly edited. Draft (`docstatus 0`) means a visit that was started but never confirmed.
 
 Unlike `Sub Contractor Payment Request` there is no `naming_series` Select field: a log book has one series and the field would be dead weight on the form.
 
 | Field | Type | Attributes |
 |---|---|---|
 | `section_break_visitor` | Section Break | label "Visitor" |
+| `amended_from` | Link → `Visitor Log` | read_only, no_copy, print_hide |
 | `visitor_name` | Data | reqd, `in_list_view` |
 | `phone_number` | Data | `options: "Phone"`, reqd, `in_list_view` |
 | `address` | Small Text | label "Address" |
@@ -47,7 +50,7 @@ Unlike `Sub Contractor Payment Request` there is no `naming_series` Select field
 | `section_break_times` | Section Break | label "Visit Times" |
 | `time_in` | Time | reqd, `read_only: 1`, `default: "Now"`, `in_list_view` |
 | `column_break_times` | Column Break | |
-| `time_out` | Time | `read_only: 1`, `in_list_view` |
+| `time_out` | Time | `read_only: 1`, `allow_on_submit: 1`, `in_list_view` |
 
 `person_to_see` links to `Employee`, which ships with HRMS. HRMS is installed on this bench (`sites/apps.txt`), so the link resolves. A visit to someone who is not an Employee record cannot be logged — accepted, in exchange for reportable traffic per staff member.
 
@@ -60,23 +63,23 @@ Both time fields are `read_only`; neither is ever typed. See §2.
 `dantata_town/dantata_town/doctype/visitor_log/visitor_log.py`:
 
 - **`before_insert`** — set `time_in = frappe.utils.nowtime()` and clear `time_out`. A form-level default is set when the form opens and drifts if the front desk is slow; the insert stamp cannot. Clearing `time_out` is not optional: `set_dynamic_default_values` (`frappe/model/create_new.py:149`) stamps **every** empty `Time` field on a new doc with `nowtime()`, unconditionally and regardless of any declared default. Left alone, every visitor would be born checked out, the Check Out button would never appear, and the "currently on site" filter would always be empty.
-- **`validate`** — if `time_out` is set and is earlier than `time_in`, `frappe.throw`.
-- **`check_out()`**, `@frappe.whitelist()` on the Document — throws if `time_out` is already set, otherwise sets `time_out = nowtime()` and saves. This is the only path that writes `time_out`.
+- **`validate`** and **`before_update_after_submit`** — both delegate to `validate_time_order()`, which throws when `time_out` precedes `time_in`. Both hooks are needed: `validate` does not run on the update-after-submit path, which is now the only path that ever sets `time_out`.
+- **`check_out()`**, `@frappe.whitelist()` on the Document — throws unless `docstatus == 1`, throws if `time_out` is already set, otherwise sets `time_out = nowtime()` and saves. This is the only path that writes `time_out`.
 
-`dantata_town/public/js/visitor_log.js` adds a **Check Out** button in `refresh`, shown only when `!frm.is_new() && !frm.doc.time_out`; it calls the method and reloads. Registered in `hooks.py` under the existing `doctype_js` map.
+`dantata_town/public/js/visitor_log.js` adds a **Check Out** button in `refresh`, shown only when `frm.doc.docstatus === 1 && !frm.doc.time_out`; it calls the method and reloads. Registered in `hooks.py` under the existing `doctype_js` map.
 
-Visitors currently on site are the list view filtered on *Time Out is not set*. No report, no code.
+Visitors currently on site are the list view filtered on *Time Out is not set*, restricted to submitted records. No report, no code.
 
 ### 3. Permissions and setup
 
 Permissions declared in the doctype JSON:
 
-| Role | read | write | create | delete | export/print/report/share/email |
-|---|---|---|---|---|---|
-| System Manager | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Visitor Log User | ✓ | ✓ | ✓ | — | ✓ |
+| Role | read | write | create | submit | cancel | amend | delete |
+|---|---|---|---|---|---|---|---|
+| System Manager | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Visitor Log User | ✓ | ✓ | ✓ | ✓ | — | — | — |
 
-No delete for the front desk: a logged visit can be corrected but not erased.
+The front desk can log, correct a draft, submit and check out. It cannot delete, cancel or amend, so a submitted visit is beyond its reach entirely — undoing one requires a System Manager.
 
 No setup code is needed to create the role. `DocType.on_update` calls `make_module_and_roles` (`frappe/core/doctype/doctype/doctype.py:532`), which inserts any Role named in the permissions table with `desk_access: 1`. Declaring `Visitor Log User` in the JSON is therefore sufficient, and a `_create_visitor_log_role()` helper in `setup.py` would only duplicate the framework. Assigning the role to users is an administrative step, not code.
 
@@ -85,9 +88,12 @@ No setup code is needed to create the role. `DocType.on_update` calls `make_modu
 `dantata_town/dantata_town/tests/test_visitor_log.py`, `FrappeTestCase` against the bench DB. No mocks — the doctype has no external boundary. One test per outcome:
 
 1. Inserting a log stamps `time_in` and leaves `time_out` empty.
-2. `check_out()` sets `time_out`.
+2. `check_out()` sets `time_out` on a submitted visit.
 3. `check_out()` on an already-checked-out visit raises.
-4. Saving with `time_out` earlier than `time_in` raises.
+4. `check_out()` on a visit that was never submitted raises.
+5. Saving with `time_out` earlier than `time_in` raises.
+
+Test 5 controls `time_in` on the draft before submitting rather than relying on the `nowtime()` stamp, so it cannot flake around midnight. `freezegun` is not installed in this bench and is not worth adding for one assertion.
 
 `dantata_town/dantata_town/tests/_helpers.py` currently exposes `get_test_expense_account()` and `ensure_site_preconditions()` — no Employee fixture. Add `ensure_test_employee()` there, returning an idempotent `Employee` (first name, gender, date of birth, date of joining, company) for the tests to point `person_to_see` at.
 
@@ -100,6 +106,7 @@ No setup code is needed to create the role. `DocType.on_update` calls `make_modu
 | Dedicated `Visitor Log User` role | Reuse System Manager / Projects User | Least privilege. The front desk has no business editing project data, and Projects Users have none editing the visitor log. |
 | Seven SoW fields, no Site link | Optional Link → Site | The deliverable is contracted and late; per-site reporting is unbilled scope. Additive later if asked. |
 | Include `visitor_name` | Ship the literal seven fields | Without it the record cannot identify the visitor, defeating the deliverable. |
+| Submittable, `time_out` the only `allow_on_submit` field | Plain non-submittable doctype | Submit freezes the visit; only the departure can still be recorded. The front desk cannot revise a visitor's details after the fact, and correcting one leaves a cancel/amend trail. |
 
 ## Files
 
