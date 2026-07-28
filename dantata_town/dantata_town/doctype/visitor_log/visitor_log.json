@@ -79,6 +79,7 @@
    "label": "Visit Times"
   },
   {
+   "default": "Now",
    "fieldname": "time_in",
    "fieldtype": "Time",
    "in_list_view": 1,
@@ -100,7 +101,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-28 00:00:00.000000",
+ "modified": "2026-07-28 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Dantata Town",
  "name": "Visitor Log",

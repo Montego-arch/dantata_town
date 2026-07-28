@@ -45,13 +45,15 @@ Unlike `Sub Contractor Payment Request` there is no `naming_series` Select field
 | `person_to_see` | Link → `Employee` | reqd, `in_list_view`, `in_standard_filter` |
 | `purpose_of_visit` | Small Text | reqd |
 | `section_break_times` | Section Break | label "Visit Times" |
-| `time_in` | Time | reqd, `read_only: 1`, `in_list_view` |
+| `time_in` | Time | reqd, `read_only: 1`, `default: "Now"`, `in_list_view` |
 | `column_break_times` | Column Break | |
 | `time_out` | Time | `read_only: 1`, `in_list_view` |
 
 `person_to_see` links to `Employee`, which ships with HRMS. HRMS is installed on this bench (`sites/apps.txt`), so the link resolves. A visit to someone who is not an Employee record cannot be logged — accepted, in exchange for reportable traffic per staff member.
 
 Both time fields are `read_only`; neither is ever typed. See §2.
+
+`time_in` carries `default: "Now"` for the browser's benefit only. Server and client disagree about empty `Time` fields: the server stamps them all with `nowtime()`, while `create_new.js` reaches its `Time → now_time()` branch only when the field already has a value (the `if (!value || df["default"])` on line 189 swallows the empty case first). Without the default, a `reqd` *and* `read_only` `time_in` renders blank in the form, fails the client-side mandatory check, and cannot be filled in — the form is unusable. The declared default only pre-fills the form; `before_insert` still overwrites it with the true insert time, so a receptionist who leaves the form open does not record a stale arrival.
 
 ### 2. Check-in and check-out
 
