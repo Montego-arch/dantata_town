@@ -30,7 +30,9 @@ The SoW field list omits the visitor's name. A log recording an address and phon
 
 ### 1. Doctype: `Visitor Log`
 
-Module **Dantata Town**. Not submittable — a log book, not a transaction. `allow_rename: 0`, `track_changes: 1`, `autoname: "VLOG-.YYYY.-.#####"` (`naming_rule: "By \"Naming Series\" field"`, matching `Sub Contractor Payment Request`), `sort_field: "modified"`, `sort_order: "DESC"`.
+Module **Dantata Town**. Not submittable — a log book, not a transaction. `allow_rename: 0`, `track_changes: 1`, `autoname: "VLOG-.YYYY.-.#####"` with `naming_rule: "Expression (old style)"`, `sort_field: "modified"`, `sort_order: "DESC"`.
+
+Unlike `Sub Contractor Payment Request` there is no `naming_series` Select field: a log book has one series and the field would be dead weight on the form.
 
 | Field | Type | Attributes |
 |---|---|---|
@@ -55,7 +57,7 @@ Both time fields are `read_only`; neither is ever typed. See §2.
 
 `dantata_town/dantata_town/doctype/visitor_log/visitor_log.py`:
 
-- **`before_insert`** — set `time_in = frappe.utils.nowtime()` when unset. A form-level default is set when the form opens and drifts if the front desk is slow; the insert stamp cannot.
+- **`before_insert`** — set `time_in = frappe.utils.nowtime()` and clear `time_out`. A form-level default is set when the form opens and drifts if the front desk is slow; the insert stamp cannot. Clearing `time_out` is not optional: `set_dynamic_default_values` (`frappe/model/create_new.py:149`) stamps **every** empty `Time` field on a new doc with `nowtime()`, unconditionally and regardless of any declared default. Left alone, every visitor would be born checked out, the Check Out button would never appear, and the "currently on site" filter would always be empty.
 - **`validate`** — if `time_out` is set and is earlier than `time_in`, `frappe.throw`.
 - **`check_out()`**, `@frappe.whitelist()` on the Document — throws if `time_out` is already set, otherwise sets `time_out = nowtime()` and saves. This is the only path that writes `time_out`.
 
@@ -74,7 +76,7 @@ Permissions declared in the doctype JSON:
 
 No delete for the front desk: a logged visit can be corrected but not erased.
 
-`_create_visitor_log_role()` in `dantata_town/dantata_town/setup.py` inserts the `Role` when absent (`desk_access: 1`), mirroring the existing `BOQ Approver` creation in `_create_boq_workflow`. It is called from `create_boq_custom_fields()`, the orchestrator already wired to both `after_install` and `after_migrate`. Assigning the role to users is an administrative step, not code.
+No setup code is needed to create the role. `DocType.on_update` calls `make_module_and_roles` (`frappe/core/doctype/doctype/doctype.py:532`), which inserts any Role named in the permissions table with `desk_access: 1`. Declaring `Visitor Log User` in the JSON is therefore sufficient, and a `_create_visitor_log_role()` helper in `setup.py` would only duplicate the framework. Assigning the role to users is an administrative step, not code.
 
 ### 4. Tests
 
@@ -108,5 +110,6 @@ No delete for the front desk: a logged visit can be corrected but not erased.
 
 **Modified**
 - `dantata_town/hooks.py` — `doctype_js["Visitor Log"]`
-- `dantata_town/dantata_town/setup.py` — `_create_visitor_log_role()` plus its call in `create_boq_custom_fields()`
 - `dantata_town/dantata_town/tests/_helpers.py` — `ensure_test_employee()`
+
+`setup.py` is untouched — see §3.
