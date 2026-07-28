@@ -14,6 +14,7 @@ class TestQuotationInstallments(FrappeTestCase):
 
 		eval_expr = "eval:doc.payment_type === 'Installment'"
 		expected = {
+			"site": {"fieldtype": "Link", "options": "Site"},
 			"dt_installment_section": {"fieldtype": "Section Break"},
 			"payment_type": {"fieldtype": "Select", "options": "\nInstallment\nOutright"},
 			"installment_column_break": {"fieldtype": "Column Break"},

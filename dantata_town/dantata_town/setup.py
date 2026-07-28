@@ -133,6 +133,14 @@ def _create_custom_fields():
 		],
 		"Quotation": [
 			{
+				"fieldname": "site",
+				"fieldtype": "Link",
+				"label": "Site",
+				"options": "Site",
+				"insert_after": "order_type",
+				"module": "Dantata Town",
+			},
+			{
 				"fieldname": "dt_installment_section",
 				"fieldtype": "Section Break",
 				"label": "Payment Type",
